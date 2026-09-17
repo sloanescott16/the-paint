@@ -1275,7 +1275,7 @@ function renderPath(){
   $('paths').innerHTML=pathCard('top')+pathCard('pin');
   var lf=left(FAV), sl=$('slider');
   sl.max=lf;
-  if(S.slider==null||S.slider>lf)S.slider=Math.round(lf*Math.max(.3,Math.min(.75,(S.odds&&S.odds[FAV]?S.odds[FAV].exp/GAMES:pct(FAV)||.5))));
+  if(!S.sliderUser||S.slider==null||S.slider>lf)S.slider=Math.round(lf*Math.max(.3,Math.min(.75,(S.odds&&S.odds[FAV]?(S.odds[FAV].exp-rec(FAV).w)/Math.max(1,lf):pct(FAV)||.5))));
   sl.value=S.slider; renderWhatIf();
 }
 function renderWhatIf(){
@@ -1538,7 +1538,7 @@ function boot(){
   else fs.remove();
   $('flt').onchange=function(){ S.flt=this.value; try{localStorage.setItem('tp-flt',S.flt)}catch(e){} syncFlt(); renderAll(); };
   $('stBtn').onclick=function(){ if(!this.classList.contains('go'))return; S.flt='all'; try{localStorage.setItem('tp-flt','all')}catch(e){} syncFlt(); };
-  $('slider').oninput=renderWhatIf;
+  $('slider').oninput=function(){ S.sliderUser=true; renderWhatIf(); };
   document.addEventListener('click',function(e){
     var t=e.target;
     var b=t.closest('[data-day]'); if(b){ S.dayOff=+b.dataset.day; renderSched(); return; }
@@ -1557,7 +1557,7 @@ function boot(){
     if(pk){ if(S.tm)closeTeam(); goGame(pk.dataset.pk); }
   });
   document.addEventListener('keydown',function(e){ if(e.key!=='Escape')return; if(S.tm){closeTeam(); return;} if(S.view==='game')gcBack(); });
-  document.addEventListener('visibilitychange',function(){ if(!document.hidden)fastLoop(); });
+  document.addEventListener('visibilitychange',function(){ if(document.hidden)return; fastLoop(); if(S.gc&&S.gc.js){ clearTimeout(S.gc.timer); gcLoad(); } });
   addEventListener('hashchange',route);
   addEventListener('resize',function(){ if(S.view==='live')renderBoard(); });
   route();
@@ -1578,7 +1578,7 @@ function openGame(id){
 function gcBack(){ var b=S.back&&!/^#game/.test(S.back)?S.back:'#home'; location.hash=b; }
 function gcLoad(){
   var gc=S.gc; if(!gc)return; var id=gc.id;
-  if(document.hidden){ gc.timer=setTimeout(gcLoad,5000); return; }
+  if(document.hidden&&gc.js){ gc.timer=setTimeout(gcLoad,5000); return; }
   j(API+'/summary?event='+id).then(function(js){
     if(S.gc!==gc)return; gc.js=js; gc.err=null; gc.g=gcGame(js);
     if(gc.g&&!gc.box)gc.box=hasT(gc.g,FAV)?(gc.g.h.id===FAV?'h':'a'):'a';
