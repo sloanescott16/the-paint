@@ -740,8 +740,16 @@ details.pa>summary .psc{margin-left:auto; flex:none; font-family:var(--display);
 
 /* ---------- The Paint additions ---------- */
 .g .chip.pre,.bg .bchip.pre{background:rgba(139,148,165,.12); color:var(--dim)}
-table.st td.odd{font-family:var(--display); font-size:15px}
-table.st td.odd.hi{color:var(--good)} table.st td.odd.mid{color:var(--warn)} table.st td.odd.lo{color:var(--bad)}
+table.st td.odd{font-family:var(--display); font-size:15px; font-weight:600; min-width:50px}
+table.st td.odd.hi{color:var(--good)} table.st td.odd.mid{color:var(--warn)} table.st td.odd.lo{color:var(--mute)} table.st td.odd.out{color:var(--bad)} table.st td.odd.in{color:#6ee0a8}
+table.st td.odd .ob{display:block; height:3px; border-radius:2px; background:#232936; margin-top:3px; overflow:hidden}
+table.st td.odd .ob i{display:block; height:100%; border-radius:2px; background:currentColor}
+/* v7: cells never wrap, the team column stays put while a table scrolls sideways */
+table.st th,table.st td{white-space:nowrap}
+table.st th:first-child,table.st td:first-child{position:sticky; left:0; z-index:1; background:var(--card); box-shadow:inset -1px 0 0 var(--line)}
+table.st tr.fav td:first-child{background:#141c2c; box-shadow:inset 3px 0 0 var(--blue), inset -1px 0 0 var(--line)}
+table.st tr.me td:first-child{background:#141c2c}
+@media (max-width:640px){ table.st{min-width:0} table.st th,table.st td{padding:7px 5px} table.st td.odd{min-width:42px; font-size:14px} }
 table.st tr.pin td{border-bottom:2px dashed rgba(232,163,61,.55)}
 table.st .sdb{display:inline-block; min-width:18px; font-size:10px; color:var(--dim); font-weight:700}
 .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--dim); margin-top:8px}
@@ -1373,7 +1381,8 @@ function loadSched(id,force){
 }
 function schedOf(id){return S.sched[id]?S.sched[id].list:null}
 function loadConfScheds(){
-  var ids=confIds(confOf(FAV)); var i=0;
+  /* v7: the Mavs' conference first, then the other one, so the East gets odds too */
+  var mine=confOf(FAV), ids=confIds(mine).concat(confIds(mine==='W'?'E':'W')); var i=0;
   function next(){ if(i>=ids.length)return Promise.resolve(); var batch=ids.slice(i,i+5); i+=5;
     return Promise.all(batch.map(function(id){return loadSched(id).catch(function(){})})).then(next); }
   return next();
@@ -1408,39 +1417,45 @@ function pWin(h,a){ var ph=RAT[h]||rating(h), pa=RAT[a]||rating(a);
   var p=ph*(1-pa)/(ph*(1-pa)+pa*(1-ph)); return Math.min(.97,Math.max(.03,p+.03)); }
 function rng(seed){ var s=seed>>>0; return function(){ s=(s+0x6D2B79F5)>>>0; var t=s; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
 function simOdds(){
-  var cf=confOf(FAV), ids=confIds(cf), idx={}; ids.forEach(function(id,i){idx[id]=i});
+  /* v7: one pass over the whole league; each conference is seeded and plays its play-in on its own */
+  var mine=confOf(FAV), confs=[mine, mine==='W'?'E':'W'];
+  var ids=confIds(confs[0]).concat(confIds(confs[1])), idx={}; ids.forEach(function(id,i){idx[id]=i});
   RAT={}; Object.keys(TEAM).forEach(function(id){RAT[id]=rating(id)});
-  var games=[], seen={}, extra=ids.map(function(){return 0}), have=true;
+  var games=[], seen={}, extra=ids.map(function(){return 0}), have=true, haveMine=true;
   ids.forEach(function(id,i){
     var l=schedOf(id);
-    if(!l){ have=false; extra[i]=left(id); return; }
+    if(!l){ have=false; if(confOf(id)===mine) haveMine=false; extra[i]=left(id); return; }
     var reg=l.filter(function(g){return g.stype===2}), done=0;
     reg.forEach(function(g){ if(g.state==='post'){done++; return;} if(seen[g.id])return; seen[g.id]=1;
       games.push([idx[g.h.id]!=null?idx[g.h.id]:-1, idx[g.a.id]!=null?idx[g.a.id]:-1, pWin(g.h.id,g.a.id)]); });
     // games ESPN has not scheduled yet (Cup knockout slots) play an average opponent
     extra[i]=Math.max(0,left(id)-(reg.length-done));
   });
-  var N=games.length>0||!have?10000:10000, rnd=rng(20270), n=ids.length;
+  var N=10000, rnd=rng(20270), n=ids.length;
   var base=ids.map(function(id){return rec(id).w}), rat=ids.map(function(id){return RAT[id]});
   var po=new Float64Array(n), top6=new Float64Array(n), pin=new Float64Array(n), one=new Float64Array(n), exp=new Float64Array(n);
-  var w=new Float64Array(n), key=new Float64Array(n), ordr=ids.map(function(_,i){return i});
+  var w=new Float64Array(n), key=new Float64Array(n);
+  var groups=confs.map(function(cf){ return ids.map(function(id,i){ return confOf(id)===cf?i:-1; }).filter(function(i){ return i>=0; }); });
+  var bykey=function(x,y){return key[y]-key[x]};
   for(var it=0;it<N;it++){
     for(var i=0;i<n;i++)w[i]=base[i];
     for(var g=0;g<games.length;g++){ var G=games[g]; if(rnd()<G[2]){ if(G[0]>=0)w[G[0]]++; } else { if(G[1]>=0)w[G[1]]++; } }
     for(i=0;i<n;i++){ var r=rat[i]; for(var e=extra[i];e>0;e--)if(rnd()<r)w[i]++; exp[i]+=w[i]; key[i]=w[i]+rnd()*.9; }
-    ordr.sort(function(x,y){return key[y]-key[x]});
-    one[ordr[0]]++;
-    for(i=0;i<6;i++){ po[ordr[i]]++; top6[ordr[i]]++; }
-    for(i=6;i<10;i++)pin[ordr[i]]++;
-    var s7=ordr[6],s8=ordr[7],s9=ordr[8],s10=ordr[9];
-    var w78=rnd()<pWin(ids[s7],ids[s8])?s7:s8, l78=w78===s7?s8:s7;
-    var w910=rnd()<pWin(ids[s9],ids[s10])?s9:s10;
-    var w8=rnd()<pWin(ids[l78],ids[w910])?l78:w910;
-    po[w78]++; po[w8]++;
+    for(var c=0;c<groups.length;c++){
+      var ordr=groups[c]; ordr.sort(bykey);
+      one[ordr[0]]++;
+      for(i=0;i<6;i++){ po[ordr[i]]++; top6[ordr[i]]++; }
+      for(i=6;i<10;i++)pin[ordr[i]]++;
+      var s7=ordr[6],s8=ordr[7],s9=ordr[8],s10=ordr[9];
+      var w78=rnd()<pWin(ids[s7],ids[s8])?s7:s8, l78=w78===s7?s8:s7;
+      var w910=rnd()<pWin(ids[s9],ids[s10])?s9:s10;
+      var w8=rnd()<pWin(ids[l78],ids[w910])?l78:w910;
+      po[w78]++; po[w8]++;
+    }
   }
   var out={};
   ids.forEach(function(id,i){ out[id]={po:po[i]/N, top6:top6[i]/N, pin:pin[i]/N, one:one[i]/N, exp:exp[i]/N}; });
-  S.odds=out; S.oddsFull=have;
+  S.odds=out; S.oddsFull=haveMine; S.oddsAll=have;
 }
 function oddsTxt(p){ if(p==null)return '--'; if(p>=.995&&p<1)return '>99%'; if(p<=.005&&p>0)return '<1%'; return Math.round(p*100)+'%'; }
 function renderOdds(){
@@ -1592,13 +1607,16 @@ function stTable(ids,opts){
     if(id===FAV)cls.push('fav');
     if(opts.cuts&&i===5)cls.push('cut'); if(opts.cuts&&i===9)cls.push('pin');
     if(opts.me===id)cls.push('me');
-    var st=String(R.strk||''), o=S.odds&&S.odds[id];
-    var oc=o?(o.po>=.7?'hi':o.po>=.3?'mid':'lo'):'';
+    var st=String(R.strk||''), o=S.odds&&S.odds[id], cl=String(R.clinch||'').toLowerCase();
+    var oc=o?(o.po>=.995?'in':o.po>=.75?'hi':o.po>=.25?'mid':o.po<=0?'out':'lo'):'';
+    if(cl==='e'){ oc='out'; } else if(cl&&cl!=='-'){ oc='in'; }
+    var otxt=cl==='e'?'out':(cl&&cl!=='-')?'100%':(o?oddsTxt(o.po):'--'), obar=o&&cl!=='e'&&!(cl&&cl!=='-')?'<span class="ob"><i style="width:'+Math.round(o.po*100)+'%"></i></span>':'';
+    var otitle=o?'Playoffs '+oddsTxt(o.po)+' · top 6 '+oddsTxt(o.top6)+' · play-in '+oddsTxt(o.pin)+' · projected '+Math.round(o.exp)+'-'+(GAMES-Math.round(o.exp)):'';
     h+='<tr class="'+cls.join(' ')+'" data-tid="'+id+'"><td><div class="tm">'+(opts.cuts?'<span class="sdb">'+(i+1)+'</span>':'')+imgT(id)+esc(nick(id))+(R.clinch&&R.clinch!=='-'?' <i>'+esc(R.clinch)+'</i>':'')+'</div></td>'+
       '<td class="rec">'+R.w+'</td><td class="rec">'+R.l+'</td><td>'+pctTxt(R.w,R.l)+'</td><td class="gb'+(Math.abs(g)<.01?' zero':'')+'">'+gbTxt(g)+'</td>'+
       (opts.full?'<td>'+esc(R.vconf||'-')+'</td><td>'+esc(R.home||'-')+'</td><td>'+esc(R.road||'-')+'</td>':'')+
       '<td>'+esc(R.l10||'-')+'</td><td class="str '+(/^W/.test(st)?'w':/^L/.test(st)?'l':'')+'">'+esc(st||'-')+'</td><td>'+(R.w+R.l?sgn(R.pf-R.pa):'-')+'</td>'+
-      (opts.odds?'<td class="odd '+oc+'">'+(o?oddsTxt(o.po):'--')+'</td>':'')+'</tr>';
+      (opts.odds?'<td class="odd '+oc+'" title="'+esc(otitle)+'">'+otxt+obar+'</td>':'')+'</tr>';
   });
   return h+'</tbody></table></div></div>';
 }
@@ -1611,9 +1629,10 @@ function renderStandings(){
   [confOf(FAV), confOf(FAV)==='W'?'E':'W'].forEach(function(cf){
     var divs=DIVS.filter(function(d){return confIds(cf).some(function(id){return divOf(id)===d})});
     h+='<div class="head" style="margin-top:14px"><h2 style="font-size:18px">'+CONFL[cf]+'</h2></div><div class="stlg"><div class="stcol">'+
-      stTable(confRank(cf),{title:CONFL[cf],full:true,cuts:true,odds:cf===confOf(FAV)})+'</div><div class="stcol">'+
-      divs.map(function(d){return stTable(order(confIds(cf).filter(function(id){return divOf(id)===d})),{title:d})}).join('')+'</div></div>';
+      stTable(confRank(cf),{title:CONFL[cf],full:true,cuts:true,odds:true})+'</div><div class="stcol">'+
+      divs.map(function(d){return stTable(order(confIds(cf).filter(function(id){return divOf(id)===d})),{title:d,odds:true})}).join('')+'</div></div>';
   });
+  h+='<p class="legend" style="display:block">Odds: every remaining game played out 10,000 times, play-in included, records regressed early in the year, ties broken at random. Hover a number for the top-6, play-in and projected-record split.</p>';
   $('standAll').innerHTML=h;
 }
 
@@ -2786,6 +2805,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('click',function(e){ var sm=e.target.closest('details[data-per]>summary'); if(!sm||!S.gc)return; var d=sm.parentNode; S.gc.open[d.dataset.per]=!d.open; });
 
 boot();
+window.TP={S:S, confOf:confOf}; /* v7: test hook */
 })();
 
 </script>
