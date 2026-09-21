@@ -1738,7 +1738,7 @@ function setView(v){
 }
 function route(){
   var h=location.hash||('#'+snDefault()), m=h.match(/^#game-(\d+)/);
-  if(m){ if(!S.gc||S.gc.id!==m[1])openGame(m[1]); setView('game'); scrollTo(0,0); return; }
+  if(m){ if(!S.gcTab)S.gcTab='live'; if(!S.gc||S.gc.id!==m[1])openGame(m[1]); setView('game'); scrollTo(0,0); return; }
   if(S.gc){ clearTimeout(S.gc.timer); S.gc=null; }
   var v=({'#sched':'sched','#live':'live','#stand':'stand','#season':'season'})[h]||'home';
   S.from=h; S.gcTab=v; setView(v); renderAll();
@@ -2448,7 +2448,7 @@ function openGame(id){
   $('gc').innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; Back</button><h2>Game Center</h2></div><div class="empty">Loading the game</div>';
   gcLoad();
 }
-function gcBack(){ var b=S.back&&!/^#game/.test(S.back)?S.back:('#'+snDefault()); location.hash=b; }
+function gcBack(){ var b=S.back&&!/^#game/.test(S.back)?S.back:'#live'; location.hash=b; }   // v8: a game opened from outside backs out to the scoreboard
 function gcLoad(){
   var gc=S.gc; if(!gc)return; var id=gc.id;
   if(document.hidden&&gc.js){ gc.timer=setTimeout(gcLoad,5000); return; }
@@ -2808,6 +2808,20 @@ boot();
 window.TP={S:S, confOf:confOf}; /* v7: test hook */
 })();
 
+
+/* Search X and any other new-tab link: iOS quietly drops window.open from a touch, so on a
+   touch device the click falls back to navigating in place rather than doing nothing at all. */
+(function () {
+  if (!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches)) return;
+  document.addEventListener("click", function (e) {
+    var t = e.target, a = t && t.closest ? t.closest('a[target="_blank"]') : null;
+    if (!a || !/^https?:/.test(a.href)) return;
+    e.preventDefault();
+    var w = null;
+    try { w = window.open(a.href, "_blank"); } catch (err) { w = null; }
+    if (!w) window.location.href = a.href;
+  }, true);
+})();
 </script>
 </body>
 </html>
