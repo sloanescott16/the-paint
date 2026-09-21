@@ -963,9 +963,50 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
 .pmh .sub a{cursor:pointer; text-decoration:underline; text-underline-offset:3px}
 .pbars{display:flex; align-items:flex-end; gap:2px; height:70px; margin:6px 0 2px; border-bottom:1px solid var(--line)}
 .pbars i{flex:1; min-width:3px; background:#2a3140; border-radius:2px 2px 0 0; cursor:pointer; position:relative}
-.pbars i.p{background:var(--blue)} .pbars i.z{height:3px!important; background:#2a3140}
+.pbars i.on{background:var(--blue)} .pbars i.zero{height:3px!important; background:#2a3140}
+.pbars i{padding:0; border:0}  /* v5: the bars used to carry class p, which is also the panel class with 17px padding, so every bar was 36px wide and the chart ran off the modal */
 .pbars i:hover{outline:1px solid #fff}
 .pbk{font-size:10.5px; color:var(--dim); display:flex; justify-content:space-between}
+/* v5: player game log as a chart plus compact rows */
+.pbars{position:relative; height:90px}
+.pbars i.l{opacity:.75}
+.pbars s{position:absolute; left:0; right:0; border-top:1px dashed rgba(255,255,255,.35); text-decoration:none; pointer-events:none; z-index:1}
+.pbars s em{position:absolute; right:0; top:-13px; font-style:normal; font-size:9.5px; color:var(--dim); background:var(--card2); padding:0 3px}
+.tseg.pst{margin-left:auto; flex-wrap:wrap}
+.tseg.pst button{padding:3px 8px}
+.pgl-top{display:flex; align-items:center; gap:8px; margin:10px 0 4px; font-size:11px; color:var(--dim)}
+.pgl-top .tseg{margin-left:auto}
+.pgl{display:grid; gap:2px; font-variant-numeric:tabular-nums; font-size:12.5px}
+.pgl-h,.pgl-r{display:grid; grid-template-columns:minmax(120px,1.2fr) 44px repeat(5,36px) minmax(150px,1fr) 40px; align-items:center; gap:4px 6px; padding:5px 6px; border-radius:8px}
+.pgl-h{font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); font-weight:700; padding-bottom:2px; border-bottom:1px solid var(--line); border-radius:0}
+.pgl-h span,.pgl-r span{text-align:right; min-width:0}
+.pgl-h span:first-child,.pgl-r .gm,.pgl-h .sh,.pgl-r .sh{text-align:left}
+.pgl-r{cursor:pointer; background:rgba(255,255,255,.02)}
+.pgl-r:hover{background:rgba(255,255,255,.06)}
+.pgl-r.avg{cursor:default; background:rgba(47,111,224,.10); box-shadow:inset 3px 0 0 var(--blue)}
+.pgl-r .gm{display:flex; flex-direction:column; min-width:0}
+.pgl-r .gm b{font-weight:600; display:flex; align-items:center; gap:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pgl-r .gm b em{font-style:normal; color:var(--dim); font-size:10.5px}
+.pgl-r .gm b img{width:16px; height:16px; object-fit:contain}
+.pgl-r .gm small{font-size:10.5px; color:var(--dim)} .pgl-r .gm small.W{color:var(--good)} .pgl-r .gm small.L{color:var(--bad)}
+.pgl-r .pts{font-family:var(--display); font-size:19px; font-weight:600; color:var(--ink)}
+.pgl-r.hot .pts{color:#8fb6ff}
+.pgl-r .sh{font-size:11px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pgl-r .sh i{font-style:normal; color:var(--dim); font-size:9.5px; margin-right:3px} .pgl-r .sh u{display:inline-block; width:9px}
+@media (max-width:640px){
+  .pgl-h{display:none}
+  .pgl-r{grid-template-columns:minmax(0,1fr) 38px 30px 30px 34px; grid-template-rows:auto auto; font-size:12px; gap:2px 6px}
+  .pgl-r .gm{grid-column:1; grid-row:1}
+  .pgl-r .pts{grid-column:2; grid-row:1} .pgl-r span:nth-child(3){grid-column:3; grid-row:1} .pgl-r span:nth-child(4){grid-column:4; grid-row:1} .pgl-r span:nth-child(9){grid-column:5; grid-row:1}
+  .pgl-r .sh{grid-column:1/3; grid-row:2} .pgl-r span:nth-child(5){grid-column:3; grid-row:2} .pgl-r span:nth-child(6){grid-column:4; grid-row:2} .pgl-r span:nth-child(7){grid-column:5; grid-row:2}
+  .pgl-r span:nth-child(2)::before,.pgl-r span:nth-child(3)::before,.pgl-r span:nth-child(4)::before,.pgl-r span:nth-child(5)::before,.pgl-r span:nth-child(6)::before,.pgl-r span:nth-child(7)::before,.pgl-r span:nth-child(9)::before{display:block; font-size:8.5px; letter-spacing:.06em; color:var(--dim); font-weight:700; font-family:var(--body)}
+  .pgl-r span:nth-child(2)::before{content:'PTS'} .pgl-r span:nth-child(3)::before{content:'REB'} .pgl-r span:nth-child(4)::before{content:'AST'} .pgl-r span:nth-child(5)::before{content:'STL'} .pgl-r span:nth-child(6)::before{content:'BLK'} .pgl-r span:nth-child(7)::before{content:'TO'} .pgl-r span:nth-child(9)::before{content:'MIN'}
+  .pgl-top{flex-wrap:wrap} .tseg button{white-space:nowrap}
+  .pbars{gap:1px} .pbars i{min-width:1px}
+}
+  .pgl-h .sh,.pgl-r.avg .sh{display:none}
+  .pgl-r .sh{grid-column:1/-1; padding-left:2px}
+}
 .sn-more{font:inherit; font-size:11px; font-weight:600; color:#8fb6ff; background:none; border:0; padding:6px 0 0; cursor:pointer}
 .sn-more:hover{text-decoration:underline}
 .pulse button,.nx,.lr{-webkit-tap-highlight-color:transparent}
@@ -2206,13 +2247,23 @@ function snPlRender(){
   if(!g) h+='<div class="tmc"><h3>Game log</h3><div class="empty">Loading the game log</div></div>';
   else if(!g.rows.length) h+='<div class="tmc"><h3>Game log</h3><div class="empty">No regular-season games logged yet.</div></div>';
   else {
-    var mx=Math.max(1,Math.max.apply(null,g.rows.map(function(r){ return +r.st.points||0; })));
-    var bars='<div class="pbars">'+g.rows.map(function(r){ var v=+r.st.points||0; return '<i data-pk="'+r.id+'" class="'+(v?'p':'z')+'" style="height:'+(v/mx*100)+'%" title="'+esc(fmtMD(r.date)+' '+r.at+' '+r.oab+': '+v+' pts'+(r.res?' ('+r.res+' '+r.score+')':''))+'"></i>'; }).join('')+'</div>'+
-      '<div class="pbk"><span>'+esc(fmtMD(g.rows[0].date))+'</span><span>points per game, tap a bar</span><span>'+esc(fmtMD(g.rows[g.rows.length-1].date))+'</span></div>';
-    var idx=g.names.map(function(n,i){ return i; }), list=S.pl.mode==='l10'?g.rows.slice(-10).reverse():g.rows.slice().reverse();
+    // v5: the game log is a chart plus compact rows, not a 17-column table that ran past the modal
+    var STS=[['points','PTS'],['rebounds','REB'],['assists','AST'],['3pm','3PM'],['steals','STL'],['blocks','BLK'],['minutes','MIN']];
+    var pick=function(st,k){ if(k==='3pm') return +String(st['threePointFieldGoalsMade-threePointFieldGoalsAttempted']||'').split('-')[0]||0; if(k==='minutes') return parseFloat(st.minutes)||0; return +st[k]||0; };
+    var sk=S.pl.stat||'points', sl=(STS.filter(function(s){ return s[0]===sk; })[0]||STS[0])[1];
+    var vals=g.rows.map(function(r){ return pick(r.st,sk); }), mx=Math.max(1,Math.max.apply(null,vals)), avg=vals.length?vals.reduce(function(a,b){ return a+b; },0)/vals.length:0;
+    var seg1='<span class="tseg pst">'+STS.map(function(s){ return '<button data-plst="'+s[0]+'" class="'+(s[0]===sk?'on':'')+'">'+s[1]+'</button>'; }).join('')+'</span>';
+    var bars='<div class="pbars"><s style="bottom:'+(avg/mx*100)+'%" title="season average '+avg.toFixed(1)+'"><em>avg '+avg.toFixed(1)+'</em></s>'+g.rows.map(function(r,i){ var v=vals[i]; return '<i data-pk="'+r.id+'" class="'+(v?'on':'zero')+(r.res==='L'?' l':'')+'" style="height:'+(v/mx*100)+'%" title="'+esc(fmtMD(r.date)+' '+r.at+' '+r.oab+': '+v+' '+sl+(r.res?' ('+r.res+' '+r.score+')':''))+'"></i>'; }).join('')+'</div>'+
+      '<div class="pbk"><span>'+esc(fmtMD(g.rows[0].date))+'</span><span>'+sl+' per game, tap a bar · high '+mx+'</span><span>'+esc(fmtMD(g.rows[g.rows.length-1].date))+'</span></div>';
+    var list=S.pl.mode==='l10'?g.rows.slice(-10).reverse():g.rows.slice().reverse();
     var seg2='<span class="tseg"><button data-plm="l10" class="'+(S.pl.mode==='l10'?'on':'')+'">Last 10</button><button data-plm="all" class="'+(S.pl.mode==='all'?'on':'')+'">All '+g.rows.length+'</button></span>';
-    h+='<div class="tmc"><h3>Game log '+snSea(g.y)+seg2+'</h3>'+bars+'<div class="scroll" style="margin-top:8px"><table class="rs"><tr><th>Date</th><th style="text-align:left">Opp</th><th>Result</th>'+idx.map(function(i){ return '<th style="cursor:default">'+esc(g.labels[i]||g.names[i])+'</th>'; }).join('')+'</tr>'+
-      list.map(function(r){ var rc=r.res==='W'?'W':r.res==='L'?'L':''; return '<tr data-pk="'+r.id+'"><td>'+esc(fmtMD(r.date))+'</td><td style="text-align:left"><div class="pl lgo"><i style="width:14px">'+esc(r.at)+'</i>'+(TEAM[r.opp]?imgT(r.opp):'')+'<b>'+esc(r.oab)+'</b></div></td><td class="'+rc+'">'+esc(r.res+' '+r.score)+'</td>'+idx.map(function(i){ var v=r.st[g.names[i]]; return '<td>'+esc(v==null?'':v)+'</td>'; }).join('')+'</tr>'; }).join('')+'</table></div></div>';
+    var n=function(st,k){ var v=pick(st,k); return Number.isInteger(v)?v:v.toFixed(1); };
+    var mean=function(k){ return list.length?(list.reduce(function(a,r){ return a+pick(r.st,k); },0)/list.length).toFixed(1):'–'; };
+    var shoot=function(st){ return [['FG',st['fieldGoalsMade-fieldGoalsAttempted']],['3PT',st['threePointFieldGoalsMade-threePointFieldGoalsAttempted']],['FT',st['freeThrowsMade-freeThrowsAttempted']]].filter(function(x){ return x[1]!=null&&x[1]!==''; }).map(function(x){ return '<i>'+x[0]+'</i>'+esc(x[1]); }).join('<u></u>'); };
+    var rows='<div class="pgl-h"><span>Game</span><span class="pts">PTS</span><span>REB</span><span>AST</span><span>STL</span><span>BLK</span><span>TO</span><span class="sh">Shooting</span><span>MIN</span></div>'+
+      '<div class="pgl-r avg"><span class="gm"><b>Average</b><small>these '+list.length+'</small></span><span class="pts">'+mean('points')+'</span><span>'+mean('rebounds')+'</span><span>'+mean('assists')+'</span><span>'+mean('steals')+'</span><span>'+mean('blocks')+'</span><span>'+mean('turnovers')+'</span><span class="sh"></span><span>'+mean('minutes')+'</span></div>'+
+      list.map(function(r){ var rc=r.res==='W'?'W':r.res==='L'?'L':'', p=pick(r.st,'points'), big=p>=30?' hot':''; return '<div class="pgl-r'+big+'" data-pk="'+r.id+'" title="Open the game"><span class="gm"><b>'+esc(fmtMD(r.date))+' <em>'+esc(r.at)+'</em> '+(TEAM[r.opp]?imgT(r.opp):'')+esc(r.oab)+'</b><small class="'+rc+'">'+esc((r.res?r.res+' ':'')+r.score)+'</small></span><span class="pts">'+n(r.st,'points')+'</span><span>'+n(r.st,'rebounds')+'</span><span>'+n(r.st,'assists')+'</span><span>'+n(r.st,'steals')+'</span><span>'+n(r.st,'blocks')+'</span><span>'+n(r.st,'turnovers')+'</span><span class="sh">'+shoot(r.st)+'</span><span>'+n(r.st,'minutes')+'</span></div>'; }).join('');
+    h+='<div class="tmc"><h3>Game log '+snSea(g.y)+seg1+'</h3>'+bars+'<div class="pgl-top"><small>'+(S.pl.mode==='l10'?'newest first, last 10':'newest first, every game')+' · tap a game to open it</small>'+seg2+'</div><div class="pgl">'+rows+'</div></div>';
   }
   $('pmBody').innerHTML=h;
 }
@@ -2230,6 +2281,7 @@ function snClick(e){
   var t=e.target, b;
   if(t.closest('[data-plclose]')||t.id==='pmod'){ snClosePlayer(); return true; }
   if((b=t.closest('[data-plm]'))){ S.pl.mode=b.dataset.plm; snPlRender(); return true; }
+  if((b=t.closest('[data-plst]'))){ S.pl.stat=b.dataset.plst; snPlRender(); return true; }
   if((b=t.closest('#pmod [data-tid]'))){ var tid=b.dataset.tid; snClosePlayer(); openTeam(tid); return true; }
   if((b=t.closest('#pmod [data-pk]'))){ var pk=b.dataset.pk; snClosePlayer(); goGame(pk); return true; }
   if((b=t.closest('[data-plid]'))){ var nm=b.querySelector('b'); if(nm&&!S.pl.nm[b.dataset.plid]) S.pl.nm[b.dataset.plid]=nm.textContent; if(S.tm) closeTeam(); snOpenPlayer(b.dataset.plid); return true; }
