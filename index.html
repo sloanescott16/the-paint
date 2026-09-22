@@ -443,7 +443,11 @@ svg.dia rect.on{fill:var(--warn); stroke:var(--warn)}
   .gct{gap:7px; flex-wrap:wrap}
   .gct img{width:32px; height:32px}
   .gct .tn{font-size:17px} .gct .tr{font-size:10px}
-  .gct .ts{font-size:40px; margin-left:0}
+  /* v8: both scores sit against the middle block, each a mirror of the other.
+     margin-left:0 here left the away score parked beside its logo while the home score
+     kept its auto margin and hugged the centre, so the two numbers never lined up. */
+  .gct .ts{font-size:40px; margin-left:auto}
+  .gct.h .ts{margin-left:0; margin-right:auto}
   .gct.h{flex-direction:row-reverse}
   .gct>div:nth-child(2){order:3; flex-basis:100%}
   .gcm{min-width:0} .gcm .gs{font-size:16px} .gcm .gs3{display:none}
