@@ -2912,5 +2912,38 @@ window.TP={S:S, confOf:confOf, gcGame:gcGame, gcRender:gcRender}; /* v7: test ho
   }, true);
 })();
 </script>
+<!-- v10: the Game Center score banner stays pinned under the top bar while the page scrolls and slims
+     once pinned; the margin under it grows by what it lost so nothing below jumps. Same as Pennant Chase v45. -->
+<style>
+#gc .gch{position:sticky; top:var(--barh,56px); z-index:40;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--ca) 30%,transparent) 0%,var(--card) 34%,var(--card) 66%,color-mix(in srgb,var(--ch) 30%,transparent) 100%),var(--card)}
+#gc .gch.stuck{padding-top:6px; padding-bottom:6px; border-top-left-radius:0; border-top-right-radius:0; box-shadow:0 8px 18px rgba(0,0,0,.5)}
+#gc .gch.stuck .gct img{width:36px; height:36px}
+#gc .gch.stuck .gct .tn{font-size:21px}
+#gc .gch.stuck .gct .tr, #gc .gch.stuck .gcm .gs2, #gc .gch.stuck .gcm .gs3{display:none}
+#gc .gch.stuck .gct .ts{font-size:42px}
+@media (max-width:760px){
+  #gc .gch.stuck{padding:5px 10px} #gc .gch.stuck .gct>div:nth-child(2){display:none}
+  #gc .gch.stuck .gct img{width:26px; height:26px} #gc .gch.stuck .gct .ts{font-size:30px}
+}
+</style>
+<script>
+(function(){
+  function stick(){
+    var bar=document.querySelector('.bar'), bh=bar?bar.getBoundingClientRect().height:0;
+    document.documentElement.style.setProperty('--barh',bh+'px');
+    var h=document.querySelector('#gc .gch'); if(!h||h.offsetParent===null) return;
+    var was=h.classList.contains('stuck'), full=was?h._fullH:h.getBoundingClientRect().height;
+    var stuck=window.scrollY>0&&h.getBoundingClientRect().top<=bh+1;
+    if(stuck===was) return;
+    if(stuck){ h._fullH=full; h.classList.add('stuck'); h.style.marginBottom=(12+full-h.getBoundingClientRect().height)+'px'; }
+    else { h.classList.remove('stuck'); h.style.marginBottom=''; }
+  }
+  window.addEventListener('scroll',stick,{passive:true});
+  window.addEventListener('resize',stick);
+  var gc=document.getElementById('gc'); if(gc) new MutationObserver(stick).observe(gc,{childList:true,subtree:true});
+  window.gcStick=stick;
+})();
+</script>
 </body>
 </html>
