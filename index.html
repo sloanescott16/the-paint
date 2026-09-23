@@ -2697,7 +2697,7 @@ function gcMomentum(g,C){
   var head=rel<0.15?'Trading punches':(nick(who2)+(rel>0.55?' on a tear':' with the momentum'));
   var note='<b>'+esc(head)+'</b>'+(isLive(g)?' right now.':' at the buzzer.')+' Last three minutes '+esc(ab(up))+' '+ru+', '+esc(ab(dn))+' '+rd+'.';
   var body='<div class="mflow"><div class="mfw">'+svg+chips+dots+'</div><div class="mfx">'+labs+'</div><div class="mfnote">'+note+'</div></div>';
-  return gcard('Game flow',body,'','<span class="gn">who has the momentum, dots are lead changes</span>');
+  return gcard('Game flow',body,'');   /* v11: no caption on the game flow */
 }
 function gcFlow(g,C){
   var plays=(S.gc.js.plays||[]).filter(function(p){return p.awayScore!=null});
