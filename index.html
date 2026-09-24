@@ -998,8 +998,8 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
 .pmh .pmx a.tmx{text-decoration:none}
 .plg{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--mute)}
 .plg span i{font-style:normal; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-right:5px}
-.pn{cursor:pointer; text-decoration:underline dotted; text-underline-offset:3px; text-decoration-color:var(--dim)}
-.pn:hover{color:#8fb6ff; text-decoration-color:#8fb6ff}
+.pn{cursor:pointer; color:#bcd0f2}   /* v12: no underline, a quiet blue tint says clickable */
+.pn:hover{color:#8fb6ff}
 .lds .lp[data-plid],.il div[data-plid],table.gt tr[data-plid]{cursor:pointer}
 .lds .lp[data-plid]:hover b,.il div[data-plid]:hover b,table.gt tr[data-plid]:hover td.nm{color:#8fb6ff}
 @media (max-width:640px){ .pmh .pmx{width:100%; justify-content:flex-end} }
@@ -2300,13 +2300,22 @@ function snPlInGame(id){
   var g=gc.g, sc=g.state==='pre'?ab(g.a.id)+' at '+ab(g.h.id):ab(g.a.id)+' '+(g.a.score!=null?g.a.score:'')+' · '+ab(g.h.id)+' '+(g.h.score!=null?g.h.score:'');
   return '<div class="tmc"><h3>'+(isLive(g)?'In this game':'In the game')+'<small>'+esc(sc)+'</small></h3><div class="plg">'+out+'</div></div>';
 }
+function plFold(str){ return String(str==null?'':str).normalize('NFD').replace(/[̀-ͯ]/g,''); }   // v12: accent-blind matching (Dončić, Jokić)
 function plNameMap(){
-  var gc=S.gc, bp=gc&&gc.js&&gc.js.boxscore&&gc.js.boxscore.players, key=(gc&&gc.id)+':'+(bp?bp.length:0)+':'+(bp&&bp[0]&&bp[0].statistics&&bp[0].statistics[0]&&bp[0].statistics[0].athletes?bp[0].statistics[0].athletes.length:0);
+  var gc=S.gc, js=gc&&gc.js, bp=js&&js.boxscore&&js.boxscore.players, pl=(js&&js.plays)||[];
+  var key=(gc&&gc.id)+':'+(bp?bp.length:0)+':'+(bp&&bp[0]&&bp[0].statistics&&bp[0].statistics[0]&&bp[0].statistics[0].athletes?bp[0].statistics[0].athletes.length:0)+':'+pl.length;
   if(S.pl.nmap&&S.pl.nmap.key===key) return S.pl.nmap;
   var m={}, amb={};
-  function add(k,id,nm){ if(!k) return; if(m[k]&&m[k].id!==id) amb[k]=1; else m[k]={id:id,nm:nm}; }
-  (bp||[]).forEach(function(P){ (P.statistics||[]).forEach(function(st){ (st.athletes||[]).forEach(function(a){ var A=a.athlete||{}; if(!A.id) return; var id=String(A.id), full=A.displayName||'', sh=A.shortName||'';
-    add(full,id,full); add(sh,id,full); var parts=full.split(' '); if(parts.length>=2){ add(parts[0][0]+'. '+parts.slice(1).join(' '),id,full); add(parts[0][0]+'.'+parts.slice(1).join(' '),id,full); } }); }); });
+  function add(k,id,nm){ k=plFold(k); if(!k) return; if(m[k]&&m[k].id!==id) amb[k]=1; else m[k]={id:id,nm:nm}; }
+  function learn(A){ if(!A||!A.id) return; var id=String(A.id), full=A.displayName||A.fullName||A.name||'', sh=A.shortName||A.short||'';
+    if(!full) return; add(full,id,full); add(sh,id,full); var parts=full.split(' '); if(parts.length>=2){ add(parts[0][0]+'. '+parts.slice(1).join(' '),id,full); add(parts[0][0]+'.'+parts.slice(1).join(' '),id,full); } }
+  // v12: every athlete the summary knows, not just the box score
+  (bp||[]).forEach(function(P){ (P.statistics||[]).forEach(function(st){ (st.athletes||[]).forEach(function(a){ learn(a.athlete); }); }); });
+  (js&&js.rosters||[]).forEach(function(R){ (R.roster||[]).forEach(function(r){ learn(r.athlete||r); }); });
+  pl.forEach(function(p){ (p.participants||[]).forEach(function(x){ learn(x.athlete); }); });
+  (js&&js.leaders||[]).forEach(function(T){ (T.leaders||[]).forEach(function(c){ (c.leaders||[]).forEach(function(x){ learn(x.athlete); }); }); });
+  (js&&js.injuries||[]).forEach(function(t){ (t.injuries||[]).forEach(function(i){ learn(i.athlete); }); });
+  Object.keys(S.sn.roster||{}).forEach(function(k){ var r=S.sn.roster[k]; if(r&&r.list) r.list.forEach(function(p){ learn({id:p.id,displayName:p.name,shortName:p.short}); }); });
   Object.keys(amb).forEach(function(k){ delete m[k]; });
   var keys=Object.keys(m).filter(function(k){return k.length>3}).sort(function(a,b){return b.length-a.length});
   S.pl.nmap={key:key, m:m, re:keys.length?new RegExp("(^|[^A-Za-z.'])("+keys.map(function(k){return k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}).join('|')+")(?![A-Za-z'])",'g'):null};
@@ -2314,7 +2323,15 @@ function plNameMap(){
 }
 function linkNames(html){
   var nm=plNameMap(); if(!nm.re) return html;
-  return html.replace(nm.re,function(all,pre,k){ var hit=nm.m[k]; return hit?pre+'<span class="pn" data-plid="'+hit.id+'" data-pname="'+esc(hit.nm)+'" title="Player card">'+k+'</span>':all; });
+  // v12: match on the accent-stripped text, splice the original characters back in
+  var src=String(html==null?'':html), fold='', map=[];
+  for(var i=0;i<src.length;i++){ var f=src[i].normalize('NFD').replace(/[̀-ͯ]/g,''); if(!f&&/[̀-ͯ]/.test(src[i])) continue; fold+=f; for(var q=0;q<f.length;q++) map.push(i); }
+  map.push(src.length);
+  var out='', last=0, re=new RegExp(nm.re.source,'g'), mt;
+  while((mt=re.exec(fold))){ var hit=nm.m[mt[2]]; if(!hit) continue;
+    var a=map[mt.index+mt[1].length], b=map[mt.index+mt[0].length];
+    out+=src.slice(last,a)+'<span class="pn" data-plid="'+hit.id+'" data-pname="'+esc(hit.nm)+'" title="Player card">'+src.slice(a,b)+'</span>'; last=b; }
+  return out+src.slice(last);
 }
 function snPlRender(){
   var id=S.pl.id; if(!id) return;
