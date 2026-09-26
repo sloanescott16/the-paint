@@ -2115,7 +2115,7 @@ function snChart(){
   for(var v=-lim;v<=lim;v+=10) g+='<line class="gl" x1="'+L+'" x2="'+(W-Rr)+'" y1="'+Y(v)+'" y2="'+Y(v)+'"'+(v===0?' style="stroke:#3a4353"':'')+'/><text class="ax" x="'+(L-5)+'" y="'+(Y(v)+3)+'" text-anchor="end">'+(v>0?'+':'')+v+'</text>';
   var step=maxX>40?20:10;
   for(var n=0;n<=maxX;n+=step) g+='<text class="ax" x="'+X(n)+'" y="'+(H-8)+'" text-anchor="middle">'+n+'</text>';
-  g+='<text class="ax" x="'+(W-Rr+12)+'" y="'+(H-8)+'" text-anchor="start">GP</text>';   /* v13: in the margin, clear of the last tick */
+  g+='<text class="ax" x="'+(W-Rr+12)+'" y="'+(H-8)+'" text-anchor="start">GP</text>';   /* v14: in the margin, clear of the last tick */
   [[c6,'6th'],[c10,'10th']].forEach(function(c){ if(!c[0]) return; var e=(c[0].w-c[0].l)/82*maxX; g+='<line class="pl" x1="'+X(0)+'" y1="'+Y(0)+'" x2="'+X(maxX)+'" y2="'+Y(e)+'"/><text class="ax" x="'+(X(maxX)+3)+'" y="'+(Y(e)+3)+'">'+c[1]+'</text>'; });
   var cols={}, paths='', ends=[];
   want.sort(function(a,b){ return a===FAV?1:b===FAV?-1:0; }).forEach(function(id){
@@ -2124,7 +2124,7 @@ function snChart(){
     paths+='<path d="'+a.map(function(v,i){ return (i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1); }).join('')+'" fill="none" stroke="'+c+'" stroke-width="'+(id===FAV?3:1.6)+'" stroke-linejoin="round" opacity="'+(id===FAV?1:.85)+'"/>';
     ends.push({x:X(a.length-1)+3, y:Y(a[a.length-1])+3, c:c, t:ab(id)});
   });
-  /* v13: teams on the same record land on the same line, so nudge their labels a full line apart */
+  /* v14: teams on the same record land on the same line, so nudge their labels a full line apart */
   ends.sort(function(a,b){ return a.y-b.y; });
   for(var ei=1;ei<ends.length;ei++) if(ends[ei].y-ends[ei-1].y<11) ends[ei].y=ends[ei-1].y+11;
   var edrop=ends.length?ends[ends.length-1].y-(H-B):0; if(edrop>0) ends.forEach(function(e){ e.y-=edrop; });
@@ -2948,7 +2948,7 @@ window.TP={S:S, confOf:confOf, gcGame:gcGame, gcRender:gcRender}; /* v7: test ho
   #gc .gch.stuck{padding:5px 10px} #gc .gch.stuck .gct>div:nth-child(2){display:none}
   #gc .gch.stuck .gct img{width:26px; height:26px} #gc .gch.stuck .gct .ts{font-size:30px}
 }
-/* v13: the score banner scales with its own width (container query), capped at the old sizes, so the scores never slide over the
+/* v14: the score banner scales with its own width (container query), capped at the old sizes, so the scores never slide over the
    middle block on a laptop or half a monitor; names give way with an ellipsis only as a last resort. Same standard as Pennant Chase v58. */
 .gch{container-type:inline-size}
 .gct>div:nth-child(2){min-width:0}
@@ -2998,11 +2998,14 @@ window.TP={S:S, confOf:confOf, gcGame:gcGame, gcRender:gcRender}; /* v7: test ho
 /* What if table: on a narrow screen it drops the pace column and lets the explanation wrap, instead of scrolling sideways */
 .tool{container-type:inline-size}
 @container (max-width:540px){ .wt{min-width:0} .wt th:nth-child(3),.wt td:nth-child(3){display:none} .wt .say{white-space:normal} }
+@container (max-width:60px){ .calg .dy .rs{font-size:9.5px;white-space:normal;overflow:visible;line-height:1.1} }
 /* standings tables: stack when there is not room for two full tables, and drop conference/home/road before they would scroll */
 .tables{grid-template-columns:repeat(auto-fit,minmax(min(100%,600px),1fr))}
 .tb{container-type:inline-size}
 @container (max-width:620px){ table.st:has(thead th:nth-child(12)) :is(th,td):is(:nth-child(6),:nth-child(7),:nth-child(8)){display:none} }
 @media (max-width:1100px){ .stlg{grid-template-columns:1fr} }
+/* phone: Pct and Diff step aside so the table fits the screen */
+@container (max-width:420px){ table.st :is(th,td):nth-child(4){display:none} table.st:not(:has(thead th:nth-child(12))) :is(th,td):nth-child(8){display:none} table.st:has(thead th:nth-child(12)) :is(th,td):nth-child(11){display:none} }
 </style>
 <script>
 (function(){
