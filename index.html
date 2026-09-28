@@ -217,10 +217,10 @@ table.st .str.w{color:var(--good)} table.st .str.l{color:var(--bad)}
 .nav a:hover{color:var(--ink)}
 .nav a.on{background:var(--blue); color:#fff}
 body.v-live #secTonight,body.v-live #secPath,body.v-live #secRace,body.v-live #secRun,body.v-live .foot{display:none}
-body.v-home #secLive{display:none}
+body.v-race #secLive{display:none}
 /* v7: schedule tab */
-body.v-home #secSched,body.v-live #secSched,body.v-stand #secSched{display:none}
-body.v-home #secStand,body.v-live #secStand,body.v-sched #secStand{display:none}
+body.v-race #secSched,body.v-live #secSched,body.v-stand #secSched{display:none}
+body.v-race #secStand,body.v-live #secStand,body.v-sched #secStand{display:none}
 body.v-stand #secLive,body.v-stand #secTonight,body.v-stand #secPath,body.v-stand #secRace,body.v-stand #secRun,body.v-stand #odds{display:none}
 #secStand{margin-top:16px}
 .stlg{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-items:start}
@@ -1075,10 +1075,11 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
   </a>
   <div class="rec" id="favRec">--<span id="favLeft"></span></div>
   <nav class="nav" id="nav">
+    <a href="#home" data-v="home">Home</a>
     <a href="#season" data-v="season">Season</a>
-    <a href="#home" data-v="home">Race</a>
-    <a href="#sched" data-v="sched">Schedule</a>
-    <a href="#live" data-v="live">Scoreboard</a>
+    <a href="#race" data-v="race">Race</a>
+    <a href="#sched" data-v="sched"><span class="nl">Schedule</span><span class="ns">Sched</span></a>
+    <a href="#live" data-v="live"><span class="nl">Scoreboard</span><span class="ns">Scores</span></a>
     <a href="#stand" data-v="stand">Standings</a>
   </nav>
   <select class="flt" id="flt" aria-label="Show">
@@ -1101,6 +1102,18 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
       <div class="split" id="oddsSplit"></div></div>
     <div class="q"><p id="oddsQ"></p></div>
   </div>
+
+  <section id="secHome">
+    <div class="head"><h2>Home</h2><span class="sub">the Mavs game, first</span><span class="note" id="hmNote"></span></div>
+    <div class="hmtop" id="hmTop"></div>
+    <div id="hmHero"></div>
+    <div class="hmflow" id="hmFlow"></div>
+    <div class="gc-grid">
+      <div class="gc-col gc-box" id="hmA"></div>
+      <div class="gc-col gc-mid" id="hmB"></div>
+      <div class="gc-col gc-side" id="hmC"></div>
+    </div>
+  </section>
 
   <section id="secSeason">
     <div class="head"><h2>The Season</h2><span class="sub" id="snSub">Mavs first, then the league</span><span class="seg" id="snSea"></span>
@@ -1761,7 +1774,7 @@ function route(){
   var h=location.hash||('#'+snDefault()), m=h.match(/^#game-(\d+)/);
   if(m){ if(!S.gcTab)S.gcTab='live'; if(!S.gc||S.gc.id!==m[1])openGame(m[1]); setView('game'); scrollTo(0,0); return; }
   if(S.gc){ clearTimeout(S.gc.timer); S.gc=null; }
-  var v=({'#sched':'sched','#live':'live','#stand':'stand','#season':'season'})[h]||'home';
+  var v=({'#sched':'sched','#live':'live','#stand':'stand','#season':'season','#race':'race','#home':'home'})[h]||'home';
   S.from=h; S.gcTab=v; setView(v); renderAll();
 }
 function goGame(id){ S.back=location.hash||('#'+snDefault()); location.hash='#game-'+id; }
@@ -1829,7 +1842,7 @@ var WEBS='https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba';
 S.sn={sea:'cur', ts:{}, pst:null, pbyt:null, roster:{}, lead:{}, leadCat:'pts', rtab:'pg', rsort:{pg:['avgPoints',-1],tot:['points',-1]}, lg:{sort:'pct',dir:-1,f:'all'}, split:null, mon:null, on:null, onKey:'', logAll:false, busy:{}};
 S.pl={id:null, mode:'l10', gl:{}, ov:{}, nm:{}, bio:{}, stat:'points'};   // v6: bio per player
 
-function snDefault(){ var m=new Date().getMonth(); return (m>=2&&m<=6)?'home':'season'; }
+function snDefault(){ return 'home'; }   /* v16: the Home tab is the landing page; the race is its own tab */
 function snPrevView(){ return S.sn.sea==='prev'; }
 function snStatPrev(){ return snPrevView()||!started(); }
 function snYear(){ return snPrevView()?PRIOR:SEASON; }
@@ -1985,7 +1998,7 @@ function snPulse(){
     if(op) cells.push([(op.h===FAV?'vs ':'@ ')+ab(snOpp(op,FAV)),'Opening night',fmtDay(op.date)+' '+fmtTime(op.date),'','','pk:'+op.id]);
     var pre=gs?gs.filter(function(x){ return x.ty===1; }):[];
     if(pre.length){ var pr=snRecOf(pre,FAV); cells.push([pr.gp?pr.txt:pre.length,'Preseason',pr.gp?'exhibition record':'exhibition games','','','cal']); }
-    if(S.odds&&S.odds[FAV]) cells.push([oddsTxt(S.odds[FAV].po),'Playoff odds','preseason model','','gr','#home']);
+    if(S.odds&&S.odds[FAV]) cells.push([oddsTxt(S.odds[FAV].po),'Playoff odds','preseason model','','gr','#race']);
   }
   cells.push([r.w+'-'+r.l,'Record'+tag,(r.w+r.l)+' played',prev&&!snPrevView()?'':'hero','','log:all']);
   cells.push([pctTxt(r.w,r.l),'Win %'+tag,'','','gr','lg:pct']);
@@ -2414,12 +2427,13 @@ document.addEventListener('mousemove',function(e){ if(S.view==='season'&&e.targe
 function renderAll(){
   renderBar();
   var v=S.view;
-  if(v==='home'){ renderOdds(); renderTonight(); renderPath(); renderRace(); renderRunIn(); }
+  if(v==='race'){ renderOdds(); renderTonight(); renderPath(); renderRace(); renderRunIn(); }
+  else if(v==='home'){ renderHome(); }
   else if(v==='live'){ renderBoard(); }
   else if(v==='sched'){ renderSched(); }
   else if(v==='stand'){ renderStandings(); }
   else if(v==='season'){ renderSeason(); }
-  if(v!=='home')renderOdds();
+  if(v!=='race')renderOdds();
   if(v==='game'&&S.gc)gcRender();
   if(S.tm)tmRender();
 }
@@ -2444,6 +2458,160 @@ function schedLoop(){
   loadConfScheds().then(function(){ S.oddsKey=''; reSim(); renderAll(); }).catch(function(){})
     .then(function(){ setTimeout(function(){ Object.keys(S.sched).forEach(function(k){S.sched[k].at=0}); schedLoop(); },30*60e3); });
 }
+
+/* ---------- v16: the Home tab ----------
+   The Crease's Home in basketball: the Mavericks game front and centre, the panels around it change with
+   the state of that game, and anything else on the page features instead of leaving. The game center
+   builders are reused as they are by lending them S.gc for one call. Preseason games count here. */
+S.hm={id:null,js:null,g:null,t:0,busy:false,pin:null};
+S.pre={list:null,at:0};
+function hmLoadPre(){
+  if(S.pre.list&&Date.now()-S.pre.at<30*60e3) return Promise.resolve();
+  S.pre.at=Date.now();
+  return j(API+'/teams/'+FAV+'/schedule?season='+SEASON+'&seasontype=1').then(function(js){
+    S.pre.list=(js.events||[]).map(normEv).filter(Boolean).sort(function(x,y){return new Date(x.date)-new Date(y.date)});
+  }).catch(function(){ S.pre.list=S.pre.list||[]; });
+}
+function hmGames(){
+  var by={};
+  [S.pre.list||[], schedOf(FAV)||[], (S.days[0]||[]).filter(function(g){return hasT(g,FAV)})].forEach(function(l){ l.forEach(function(g){ by[g.id]=g; }); });
+  return Object.keys(by).map(function(k){return by[k]}).sort(function(x,y){return new Date(x.date)-new Date(y.date)});
+}
+function hmPickGame(){
+  var all=hmGames();
+  if(S.hm.pin){ var p=all.filter(function(g){return g.id===S.hm.pin})[0]||(S.days[0]||[]).filter(function(g){return g.id===S.hm.pin})[0]||(S.hm.g&&S.hm.g.id===S.hm.pin?S.hm.g:null); if(p) return p; if(S.hm.id===S.hm.pin) return {id:S.hm.pin}; }
+  var td=(S.days[0]||[]).filter(function(g){return hasT(g,FAV)});
+  var x=td.filter(isLive)[0]||td.filter(function(g){return g.state==='pre'})[0]||td.filter(isFinal)[0];
+  if(x) return x;
+  var now=Date.now()-3*3600e3;
+  x=all.filter(function(g){return g.state!=='post'&&new Date(g.date).getTime()>now})[0];
+  if(x) return x;
+  var done=all.filter(isFinal); return done[done.length-1]||null;
+}
+function hmWith(fn){
+  if(!S.hm.js||!S.hm.g) return '';
+  var keep=S.gc;
+  S.gc={id:S.hm.id, js:S.hm.js, g:S.hm.g, box:S.hm.g.a.id===FAV?'a':'h', shT:'both', shQ:0, hl:null, open:{}, timer:null, err:null};
+  var out='';
+  try{ out=fn(S.hm.g,pairCols(S.hm.g))||''; }catch(e){ if(window.console) console.error('home',e); }
+  S.gc=keep;
+  return out;
+}
+function hmLoad(force){
+  var p=hmPickGame(); if(!p) return Promise.resolve();
+  var id=String(p.id);
+  if(S.hm.id!==id){ S.hm.id=id; S.hm.js=null; S.hm.g=null; S.hm.t=0; }
+  if(S.hm.busy) return Promise.resolve();
+  var live=S.hm.g?isLive(S.hm.g):isLive(p);
+  if(!force&&S.hm.js&&Date.now()-S.hm.t<(live?4500:60000)) return Promise.resolve();
+  S.hm.busy=true;
+  return j(API+'/summary?event='+id).then(function(js){
+    if(S.hm.id!==id) return;
+    S.hm.js=js; S.hm.g=gcGame(js); S.hm.t=Date.now();
+    if(S.hm.g) [S.hm.g.h.id,S.hm.g.a.id].forEach(function(t){ if(!schedOf(t)) loadSched(t).then(function(){ if(S.view==='home') renderHome(true); }).catch(function(){}); });
+  },function(){}).then(function(){ S.hm.busy=false; if(S.view==='home') renderHome(true); });
+}
+function hmFeature(id){
+  id=String(id||''); if(!id||id===String(S.hm.id)) return;
+  S.hm.pin=id; S.hm.id=id; S.hm.js=null; S.hm.g=null; S.hm.t=0;
+  renderHome(true); window.scrollTo({top:0,behavior:'smooth'}); hmLoad(true);
+}
+function hmUnfeature(){
+  S.hm.pin=null; S.hm.id=null; S.hm.js=null; S.hm.g=null; S.hm.t=0;
+  renderHome(true); window.scrollTo({top:0,behavior:'smooth'}); hmLoad(true);
+}
+function hmTile(k,v,sub,cls,href){ return '<'+(href?'a href="'+href+'"':'div')+' class="hmt'+(cls?' '+cls:'')+'"><span class="k">'+k+'</span><b>'+v+'</b><span class="s">'+sub+'</span></'+(href?'a':'div')+'>'; }
+function hmStrip(){
+  var r=rec(FAV), st=started(), out=[];
+  var first=(schedOf(FAV)||[])[0];
+  out.push(hmTile('Record',st?r.w+'-'+r.l:'0-0',st?esc(pctTxt(r.w,r.l)+' · '+left(FAV)+' left'):(first?'opens '+esc(fmtMD(first.date)):GAMES+' to play'),'dal'));
+  var sd=seedOf(FAV);
+  out.push(hmTile('West',sd?ord(sd):'--',st?esc(gbTxt(gbBetween(confRank('W')[0],FAV))+' GB'):'projected'));
+  out.push(hmTile('Last 10',esc(r.l10||'--'),'streak '+esc(r.strk||'--')));
+  out.push(hmTile('Point diff',st?sgn(r.pf-r.pa):'--',st?fixed(r.pf)+' for, '+fixed(r.pa)+' against':'per game, once it counts'));
+  var o=S.odds&&S.odds[FAV];
+  if(o) out.push(hmTile('Playoff odds',oddsTxt(o.po),'the race &rsaquo;','odds','#race'));
+  return out.join('');
+}
+function hmWhen(g){
+  var d=new Date(g.date), ms=d-Date.now();
+  if(isNaN(d)||ms<=0) return '';
+  if(ms>36*3600e3) return esc(d.toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'})+' at '+fmtTime(g.date));
+  var h=Math.floor(ms/3600e3), m=Math.round(ms%3600e3/60e3); if(m===60){h++;m=0;}
+  return 'Tip-off in '+(h?h+'h '+(m?m+'m':''):m+'m')+' &middot; '+esc(fmtTime(g.date));
+}
+function hmHero(){
+  var g=S.hm.g;
+  if(!g){
+    var p=hmPickGame();
+    return '<div class="hmhero"><div class="hmh"><span class="hml">Next up</span></div><div class="empty">'+
+      (p&&p.h?esc('Mavericks '+(p.h.id===FAV?'vs ':'at ')+nick(oppOf(p,FAV))+', '+fmtDay(p.date)+' at '+fmtTime(p.date)):'Loading the Mavericks game')+'</div></div>';
+  }
+  var st=g.state, C=pairCols(g);
+  var lab=st==='in'?'Live now':st==='post'?'Final':'Next up';
+  var cta='<button class="btn hmgo" type="button" data-gcopen="'+esc(g.id)+'">'+(st==='pre'?'Full preview':st==='in'?'Game Center':'Game breakdown')+' &rsaquo;</button>';
+  var back=(S.hm.pin&&!hasT(g,FAV))?'<button class="btn hmback" type="button" data-hmclear>&lsaquo; Back to the Mavs</button>':'';
+  var hd=gcHeader(g,C), i=hd.indexOf('<div class="gch"'); hd=i>=0?hd.slice(i):hd;
+  return '<div class="hmhero'+(st==='in'?' live':'')+'">'+
+    '<div class="hmh"><span class="hml'+(st==='in'?' on':st==='post'?' fin':'')+'">'+lab+'</span>'+(g.stype===1?'<span class="hml">Preseason</span>':'')+
+    (st==='pre'?'<span class="hmwhen">'+hmWhen(g)+'</span>':'')+back+cta+'</div>'+
+    '<div class="hmband" data-gcopen="'+esc(g.id)+'" title="Open the game center">'+hd+'</div>'+
+    (st==='in'&&g.last?'<div class="hmlast">'+esc(g.last)+'</div>':'')+'</div>';
+}
+function hmSide(title,body,extra){ return '<div class="tb hmside"><div class="tbh"><h3>'+title+'</h3><span>'+(extra||'')+'</span></div><div class="hmsb">'+body+'</div></div>'; }
+function hmTonight(){
+  var gs=(S.days[0]||[]).slice();
+  if(!gs.length) return hmSide('Around the league','<div class="empty">Nothing on tonight.</div>');
+  var rank={'in':0,'pre':1,'post':2};
+  gs.sort(function(x,y){ return (rank[x.state]-rank[y.state])||(new Date(x.date)-new Date(y.date)); });
+  var show=gs.slice(0,10);
+  return hmSide('Around the league','<div class="games">'+show.map(function(g){ var c=card(g,{plain:true}); return String(g.id)===String(S.hm.id)?c.replace('<div class="g','<div class="picked g'):c; }).join('')+'</div>'+
+    (gs.length>show.length?'<div style="margin-top:9px"><a class="lnk" href="#live">the full scoreboard, all '+gs.length+' games &rsaquo;</a></div>':''),
+    gs.length+' game'+(gs.length===1?'':'s'));
+}
+function hmDiv(){
+  var ids=order(Object.keys(TEAM).filter(function(k){return divOf(k)===divOf(FAV)}));
+  return '<div class="hmstand">'+stTable(ids,{title:divOf(FAV),sub:started()?'':'preseason order by projection',odds:true})+'</div>';
+}
+function hmNext(){
+  var now=Date.now()-3*3600e3;
+  var list=hmGames().filter(function(g){ return g.state!=='post'&&new Date(g.date).getTime()>now; }).slice(0,4);
+  if(!list.length) return '';
+  return hmSide('Next up','<table class="tsch hmnx">'+list.map(function(g){
+    var o=oppOf(g,FAV);
+    return '<tr data-hmpick="'+esc(g.id)+'"'+(String(g.id)===String(S.hm.id)?' class="next"':'')+'><td>'+esc(fmtDay(g.date))+'</td>'+
+      '<td><div class="op">'+imgT(o)+esc((g.h.id===FAV?'vs ':'at ')+nick(o))+'</div></td><td class="rs">'+esc(fmtTime(g.date))+(g.stype===1?' <small>pre</small>':'')+'</td></tr>';
+  }).join('')+'</table>','tap to feature it');
+}
+function renderHome(fromLoad){
+  if(!$('hmTop')) return;
+  if(!fromLoad){ hmLoadPre().then(function(){ if(S.view==='home'&&!S.hm.id) renderHome(); }); hmLoad(); }
+  $('hmTop').innerHTML=hmStrip();
+  $('hmHero').innerHTML=hmHero();
+  var g=S.hm.g, st=g?g.state:'';
+  $('hmFlow').innerHTML=(st==='in'||st==='post')?hmWith(gcMomentum):'';
+  var A='',B='';
+  if(st==='in'||st==='post'){
+    A=hmWith(function(g){ return gcLine(g); })+hmWith(function(g){ return gcLeaders(g,'Top performers'); });
+    B=hmWith(gcWP)+hmWith(gcFlow)+hmWith(gcCompare);
+  } else if(st==='pre'){
+    A=hmWith(function(g){ return preTape(g); })+hmWith(function(g){ return gcLeaders(g,'Players to watch'); });
+    B=hmWith(preWin)+hmWith(function(g){ return preStake(g); })+hmWith(function(g){ return preSeries(g); })+hmWith(function(g){ return preForm(g); });
+  }
+  $('hmA').innerHTML=A; $('hmB').innerHTML=B;
+  $('hmC').innerHTML=hmTonight()+hmDiv()+hmNext();
+  $('hmNote').textContent=new Date().toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
+}
+document.addEventListener('click',function(e){
+  var t=e.target; if(!t.closest||!t.closest('#secHome')) return;
+  if(t.closest('[data-hmclear]')){ e.stopPropagation(); hmUnfeature(); return; }
+  var tm=t.closest('[data-tid]');
+  if(tm&&(t.tagName==='IMG'||t.closest('.nm')||t.closest('.tn')||!tm.classList.contains('row')&&!tm.classList.contains('gct'))) return;   /* team pop-ups keep working */
+  var go=t.closest('[data-gcopen]'); if(go){ e.stopPropagation(); goGame(go.getAttribute('data-gcopen')); return; }
+  var pk=t.closest('[data-hmpick]')||t.closest('.g[data-pk]');
+  if(pk){ e.stopPropagation(); hmFeature(pk.getAttribute('data-hmpick')||pk.getAttribute('data-pk')); }
+},true);
+
 function boot(){
   try{ var f=localStorage.getItem('tp-flt'); if(f)S.flt=f; var so=localStorage.getItem('tp-sort'); if(so&&SORTS.some(function(x){return x[0]===so}))S.sort=so; }catch(e){}
   syncFlt();
@@ -3008,6 +3176,87 @@ window.TP={S:S, confOf:confOf, gcGame:gcGame, gcRender:gcRender}; /* v7: test ho
 @container (max-width:420px){ table.st :is(th,td):nth-child(4){display:none} table.st:not(:has(thead th:nth-child(12))) :is(th,td):nth-child(8){display:none} table.st:has(thead th:nth-child(12)) :is(th,td):nth-child(11){display:none} }
 /* v15: on phones the short padding rule wiped the status-bar allowance, so the title sat under the iPhone clock; put it back as Pennant Chase does */
 @media (max-width:640px){ .bar{padding-top:calc(9px + env(safe-area-inset-top,0px))} }
+/* ---------- v16: Home tab, from The Crease v13/v14 ---------- */
+body:not(.v-home) #secHome{display:none}
+body.v-home #odds,body.v-home #secSeason,body.v-home #secLive,body.v-home #secSched,body.v-home #secStand,
+body.v-home #secTonight,body.v-home #secPath,body.v-home #secRace,body.v-home #secRun,body.v-home #secGame{display:none}
+#secHome{margin-top:16px}
+.hmtop{display:grid; grid-template-columns:repeat(auto-fit,minmax(122px,1fr)); gap:9px; margin-bottom:12px}
+.hmt{background:var(--card); border:1px solid var(--line); border-radius:11px; padding:9px 11px; display:flex; flex-direction:column; gap:1px; min-width:0; text-decoration:none; color:inherit}
+.hmt .k{font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim); font-weight:700}
+.hmt b{font-family:var(--display); font-weight:600; font-size:25px; line-height:1.05; letter-spacing:.01em}
+.hmt .s{font-size:11px; color:var(--mute); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+a.hmt:hover{border-color:#39404f}
+.hmt.odds b{color:var(--good)} .hmt.odds .s{color:#7ee2a8}
+.hmt.dal{border-color:var(--blue-d)}
+.hmhero{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px 14px; margin-bottom:12px}
+.hmhero.live{border-color:#4a2230; box-shadow:0 0 0 1px rgba(255,59,78,.12) inset}
+.hmh{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px}
+.hml{font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); border:1px solid var(--line); border-radius:999px; padding:3px 9px}
+.hml.on{color:#fff; background:var(--live); border-color:var(--live)}
+.hml.fin{color:var(--ink)}
+.hmwhen{font-size:12px; color:var(--mute)}
+.hmh .hmgo{margin-left:auto}
+.hmflow:not(:empty){margin-bottom:12px}
+/* v16: win probability */
+.wpt{display:flex; align-items:baseline; gap:10px; margin-bottom:6px}
+.wpt img{width:26px; height:26px; object-fit:contain; align-self:center; flex:none}
+.wpt .wv{font-family:var(--display); font-weight:700; font-size:40px; line-height:1}
+.wpt .wl{font-size:11px; color:var(--mute)}
+.wpw{position:relative}
+.wpw svg{width:100%; display:block}
+.wpw .ax{fill:var(--dim); font:600 9px var(--body)}
+.wpw .gl{stroke:#232936; stroke-width:1}
+.wpw .mid{stroke:#3a4353; stroke-dasharray:3 3}
+.wpw .gd{stroke:#fff; stroke-width:1.1}
+.wpn{margin:9px 0 0; font-size:10.5px; color:var(--dim); line-height:1.45}
+.wpa{display:inline-block; font-size:10px; font-weight:800; padding:1px 5px; border-radius:3px; vertical-align:1px}
+.wpa.g{background:rgba(184,217,74,.16); color:var(--good)} .wpa.r{background:rgba(224,71,91,.16); color:#f18a97}
+.swings{margin-top:10px; padding-top:8px; border-top:1px solid var(--line)}
+.swings h4{margin:0 0 4px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim)}
+.swings div{display:flex; gap:8px; align-items:baseline; padding:4px 0; font-size:12px; color:var(--mute)}
+.swings div .wpa{margin:0; flex:none; min-width:40px; text-align:center}
+.swings div .in{flex:none; color:var(--dim); font-size:10.5px; font-weight:600; min-width:52px}
+.swings div span:last-child{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.hmband{cursor:pointer; border-radius:10px; transition:box-shadow .15s}
+.hmband:hover{box-shadow:0 0 0 1px var(--line)}
+.hmband .gct .ts,.hmband .gcm{cursor:pointer}
+#secHome .games .g{cursor:pointer}
+#secHome .games .g.picked{border-color:var(--blue); box-shadow:0 0 0 1px var(--blue) inset}
+#secHome .tsch tr{cursor:pointer}
+#secHome .tsch tr:hover td{background:rgba(255,255,255,.035)}
+.hmh .hmback{margin-left:auto}
+.hmh .hmback + .hmgo{margin-left:0}
+.hmstand .tb{margin:0}
+@media (max-width:760px){
+  .hmtop{grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px}
+  .hmt.odds{grid-column:1/-1; flex-direction:row; align-items:baseline; gap:8px}
+  .hmt.odds .k{flex:none} .hmt.odds b{font-size:19px} .hmt.odds .s{margin-left:auto}
+  .hmt b{font-size:21px}
+  .hmhero{padding:10px 11px 12px; border-radius:11px}
+  .hmh .hmgo{margin-left:0; width:100%}
+}
+
+.nav a .ns{display:none}
+.hmlast{margin-top:10px; font-size:12.5px; color:var(--mute); border-top:1px solid var(--line); padding-top:8px}
+.hmside{margin-bottom:12px}
+.hmsb{padding:10px 12px}
+.hmside .games{display:grid; gap:8px; grid-template-columns:minmax(0,1fr)}
+.hmside .g.picked{border-color:var(--blue); box-shadow:0 0 0 1px var(--blue) inset}
+.hmside .g{cursor:pointer}
+.hmstand{margin-bottom:12px}
+table.hmnx{width:100%; border-collapse:collapse; font-size:12.5px}
+table.hmnx td{padding:7px 4px; border-top:1px solid var(--line); white-space:nowrap}
+table.hmnx tr:first-child td{border-top:0}
+table.hmnx tr{cursor:pointer} table.hmnx tr:hover td{background:rgba(255,255,255,.035)}
+table.hmnx tr.next td{color:var(--ink); font-weight:600}
+table.hmnx .op{display:flex; align-items:center; gap:6px} table.hmnx .op img{width:20px; height:20px; object-fit:contain}
+table.hmnx .rs{text-align:right; color:var(--mute)} table.hmnx .rs small{color:var(--dim)}
+@media (max-width:640px){
+  .bar .nav{gap:2px; padding:2px}
+  .bar .nav a{padding:5px 5px; font-size:11px; letter-spacing:-.1px; min-width:0}
+  .nav a .nl{display:none} .nav a .ns{display:inline}
+}
 </style>
 <script>
 (function(){
