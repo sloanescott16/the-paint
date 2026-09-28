@@ -3006,6 +3006,8 @@ window.TP={S:S, confOf:confOf, gcGame:gcGame, gcRender:gcRender}; /* v7: test ho
 @media (max-width:1100px){ .stlg{grid-template-columns:1fr} }
 /* phone: Pct and Diff step aside so the table fits the screen */
 @container (max-width:420px){ table.st :is(th,td):nth-child(4){display:none} table.st:not(:has(thead th:nth-child(12))) :is(th,td):nth-child(8){display:none} table.st:has(thead th:nth-child(12)) :is(th,td):nth-child(11){display:none} }
+/* v15: on phones the short padding rule wiped the status-bar allowance, so the title sat under the iPhone clock; put it back as Pennant Chase does */
+@media (max-width:640px){ .bar{padding-top:calc(9px + env(safe-area-inset-top,0px))} }
 </style>
 <script>
 (function(){
