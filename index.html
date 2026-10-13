@@ -1975,13 +1975,15 @@ function renderSeason(){
   $('snSea').innerHTML=['cur','prev'].map(function(k){ return '<button data-sea="'+k+'" class="'+(S.sn.sea===k?'on':'')+'">'+snSea(k==='cur'?SEASON:PRIOR)+'</button>'; }).join('');
   $('snNote').textContent=!snPrevView()&&!started()?'Preseason: stats show last season until tip-off':'';
   var need=[], y=snYear(), sy=snStatPrev()?PRIOR:SEASON;
-  if(snStatPrev()&&!S.sn.pst) need.push(snLoadPrior());
-  if(snStatPrev()&&!S.sn.pbyt) need.push(snLoadPByt());
-  if(!S.sn.ts[FAV+'|'+y]) need.push(snLoadTS(FAV,y));
-  if(y===SEASON&&!schedOf(FAV)) need.push(loadSched(FAV).catch(function(){}));
-  if(!S.sn.roster[sy]) need.push(snLoadRoster(sy));
-  if(!S.sn.lead[S.sn.leadCat+'|'+sy]) need.push(snLoadLead(S.sn.leadCat,sy));
-  if(need.length) Promise.all(need).then(function(){ if(S.view==='season') renderSeason(); });
+  /* hotfix 2026-10-13: each load at most once per 5 min (tryLoad), so a failing call cannot loop renderSeason */
+  function ask(k,fn){ var p=tryLoad(k,fn); if(p) need.push(p); }
+  if(snStatPrev()&&!S.sn.pst) ask('pst',snLoadPrior);
+  if(snStatPrev()&&!S.sn.pbyt) ask('pbyt',snLoadPByt);
+  if(!S.sn.ts[FAV+'|'+y]) ask('ts|'+FAV+'|'+y,function(){ return snLoadTS(FAV,y); });
+  if(y===SEASON&&!schedOf(FAV)) ask('sched|'+FAV,function(){ return loadSched(FAV).catch(function(){}); });
+  if(!S.sn.roster[sy]) ask('roster|'+sy,function(){ return snLoadRoster(sy); });
+  if(!S.sn.lead[S.sn.leadCat+'|'+sy]) ask('lead|'+S.sn.leadCat+'|'+sy,function(){ return snLoadLead(S.sn.leadCat,sy); });
+  if(need.length) Promise.all(need.map(function(p){ return Promise.resolve(p).catch(function(){}); })).then(function(){ if(S.view==='season') renderSeason(); });
   [snPulse,snNext,snLast,snRib,snSplits,snChart,snCal,snToday,snH2H,snRoster,snLeaders,snLeague,snLog].forEach(function(f){ try{ f(); }catch(e){ console.error(e); } });
 }
 function snPulse(){
@@ -2113,10 +2115,11 @@ function snChart(){
   if(S.sn.onKey!==String(cy)){ S.sn.onKey=String(cy); S.sn.on={}; S.sn.on[FAV]=1; if(live) div.forEach(function(id){ S.sn.on[id]=1; }); }
   var want=Object.keys(S.sn.on), ser={}, miss=[];
   want.forEach(function(id){ var s=snSeries(cy,id); if(s) ser[id]=s; else miss.push(id); });
-  if(miss.length) Promise.all(miss.map(function(id){ return cy===SEASON?loadSched(id).catch(function(){}):snLoadTS(id,cy); })).then(function(){ if(S.view==='season') snChart(); });
+  miss=miss.map(function(id){ return cy===SEASON?tryLoad('sched|'+id,function(){ return loadSched(id).catch(function(){}); }):tryLoad('ts|'+id+'|'+cy,function(){ return snLoadTS(id,cy); }); }).filter(Boolean);
+  if(miss.length) Promise.all(miss).then(function(){ if(S.view==='season') snChart(); });
   // cut lines from last season's final table: 6th and 10th in the West
   var pst=S.sn.pst, c6=null, c10=null;
-  if(pst){ var wr=confIds(confOf(FAV)).filter(function(k){ return pst[k]; }).sort(function(a,b){ return snPct(pst[b])-snPct(pst[a]); }); if(wr[5]) c6=pst[wr[5]]; if(wr[9]) c10=pst[wr[9]]; } else snLoadPrior().then(function(){ if(S.view==='season') snChart(); });
+  if(pst){ var wr=confIds(confOf(FAV)).filter(function(k){ return pst[k]; }).sort(function(a,b){ return snPct(pst[b])-snPct(pst[a]); }); if(wr[5]) c6=pst[wr[5]]; if(wr[9]) c10=pst[wr[9]]; } else { var pp=tryLoad('pst',snLoadPrior); if(pp) pp.then(function(){ if(S.view==='season') snChart(); }); }
   var W=560,H=280,L=30,T=10,B=24,Rr=34;
   var NG=cy===SEASON?GAMES:82;
   var maxX=live?Math.min(NG,Math.max(10,Math.max.apply(null,want.map(function(id){ return (ser[id]||[0]).length-1; }))+2)):NG;
@@ -2464,13 +2467,25 @@ function schedLoop(){
    the state of that game, and anything else on the page features instead of leaving. The game center
    builders are reused as they are by lending them S.gc for one call. Preseason games count here. */
 S.hm={id:null,js:null,g:null,t:0,busy:false,pin:null};
-S.pre={list:null,at:0};
+S.pre={list:null,at:0,p:null};
+/* hotfix 2026-10-13: the preseason list loads at most once per 30 min refresh cycle (5 min after a failure), one call
+   in flight at a time. Resolves true only when a call really finished, so the caller re-renders once, never in a loop. */
 function hmLoadPre(){
-  if(S.pre.list&&Date.now()-S.pre.at<30*60e3) return Promise.resolve();
+  if(S.pre.p) return S.pre.p.then(function(){ return false; });
+  if(S.pre.at&&Date.now()-S.pre.at<30*60e3) return Promise.resolve(false);
   S.pre.at=Date.now();
-  return j(API+'/teams/'+FAV+'/schedule?season='+SEASON+'&seasontype=1').then(function(js){
+  S.pre.p=j(API+'/teams/'+FAV+'/schedule?season='+SEASON+'&seasontype=1').then(function(js){
     S.pre.list=(js.events||[]).map(normEv).filter(Boolean).sort(function(x,y){return new Date(x.date)-new Date(y.date)});
-  }).catch(function(){ S.pre.list=S.pre.list||[]; });
+  }).catch(function(){ S.pre.list=S.pre.list||[]; S.pre.at=Date.now()-25*60e3; })
+    .then(function(){ S.pre.p=null; return true; });
+  return S.pre.p;
+}
+/* hotfix 2026-10-13: a load a view asks for on render is tried at most once per 5 min, so a failed or empty answer
+   cannot make the view ask again and re-render for ever */
+S.tried={};
+function tryLoad(k,fn){
+  S.tried=S.tried||{}; var t=S.tried[k]; if(t&&Date.now()-t<5*60e3) return null;
+  S.tried[k]=Date.now(); return fn();
 }
 function hmGames(){
   var by={};
@@ -2545,7 +2560,8 @@ function hmHero(){
   if(!g){
     var p=hmPickGame();
     return '<div class="hmhero"><div class="hmh"><span class="hml">Next up</span></div><div class="empty">'+
-      (p&&p.h?esc('Mavericks '+(p.h.id===FAV?'vs ':'at ')+nick(oppOf(p,FAV))+', '+fmtDay(p.date)+' at '+fmtTime(p.date)):'Loading the Mavericks game')+'</div></div>';
+      (p&&p.h?esc('Mavericks '+(p.h.id===FAV?'vs ':'at ')+nick(oppOf(p,FAV))+', '+fmtDay(p.date)+' at '+fmtTime(p.date)):
+       p||S.pre.p||S.pre.list===null?'Loading the Mavericks game':'No Mavericks game found right now. ESPN may be slow to answer; the page will try again shortly.')+'</div></div>';
   }
   var st=g.state, C=pairCols(g);
   var lab=st==='in'?'Live now':st==='post'?'Final':'Next up';
@@ -2585,7 +2601,7 @@ function hmNext(){
 }
 function renderHome(fromLoad){
   if(!$('hmTop')) return;
-  if(!fromLoad){ hmLoadPre().then(function(){ if(S.view==='home'&&!S.hm.id) renderHome(); }); hmLoad(); }
+  if(!fromLoad){ hmLoadPre().then(function(done){ if(done&&S.view==='home'){ if(!S.hm.id) hmLoad(); renderHome(true); } }); hmLoad(); }
   $('hmTop').innerHTML=hmStrip();
   $('hmHero').innerHTML=hmHero();
   var g=S.hm.g, st=g?g.state:'';
