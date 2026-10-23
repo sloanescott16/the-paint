@@ -1367,6 +1367,8 @@ function order(ids){
 function confRank(cf){return order(confIds(cf))}
 function seedOf(id){return confRank(confOf(id)).indexOf(id)+1}
 function gbBetween(a,b){var A=rec(a),B=rec(b); return ((A.w-B.w)+(B.l-A.l))/2} // + means a is ahead of b
+/* v18: race sentences word a gap as N back, level, or N ahead, never "-" */
+function gapTxt(n,back,ahead,level){ if(Math.abs(n)<.01)return level; return gbTxt(n)+' '+(n>0?back:ahead); }
 function gbTxt(n){ if(Math.abs(n)<.01)return '-'; var s=Math.abs(n); return (s%1?s.toFixed(1):String(s)); }
 function reach(){ return Math.max(5, left(FAV)*0.3) }
 function relevant(id){ return id!==FAV && confOf(id)===confOf(FAV) && Math.abs(gbBetween(id,FAV))<=reach() }
@@ -1518,6 +1520,7 @@ function renderBar(){
   btn.className='st'+(live.length?' go':'');
   $('stText').textContent=live.length?(live.length+' live'):('updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}));
   $('upd').textContent='updated '+new Date().toLocaleTimeString();
+  var ro=document.querySelector('#flt option[value="race"]'), on=raceOn(); if(ro){ ro.hidden=ro.disabled=!on; if(!on&&$('flt').value==='race')$('flt').value='all'; }   /* v18 */
 }
 
 /* ---------- game cards ---------- */
@@ -1596,16 +1599,16 @@ function pathCard(kind){
     var chaser=r[cut]; // first team outside the line
     var m=magic(chaser), lead=gbBetween(FAV,chaser);
     big='Hold '+ord(s)+'. Magic number vs the '+esc(nick(chaser))+': <em>'+m+'</em>';
-    side='<div class="elim"><div class="n" style="color:var(--good)">'+gbTxt(lead)+'</div><div class="t">games clear</div></div>';
+    side='<div class="elim"><div class="n" style="color:var(--good)">'+(Math.abs(lead)<.01?'0':gbTxt(lead))+'</div><div class="t">games clear</div></div>';
     lines.push([m,'Any combination of Dallas wins and <b>'+esc(nick(chaser))+'</b> losses ('+ord(cut+1)+') that adds to '+m+' locks Dallas ahead of them.']);
     r.slice(cut,cut+3).forEach(function(id,k){ if(k===0)return; lines.push([magic(id),'Magic number vs <b>'+esc(nick(id))+'</b> ('+ord(cut+1+k)+', '+rec(id).w+'-'+rec(id).l+').']); });
   } else {
     var tgt=r[cut-1], back=-gbBetween(FAV,tgt), e=elim(tgt);
-    big=gbTxt(back)+' back of the '+esc(nick(tgt))+' for '+ord(cut)+'. <em>'+lf+'</em> to play';
+    big=gapTxt(back,'back of the','ahead of the','level with the')+' '+esc(nick(tgt))+' for '+ord(cut)+'. <em>'+lf+'</em> to play';
     side='<div class="elim"><div class="n">'+e+'</div><div class="t">elim #</div></div>';
     lines.push([e,'<b>'+esc(nick(tgt))+'</b> wins plus Dallas losses: '+e+' more and '+ord(cut)+' is out of reach.']);
     r.slice(0,cut).reverse().filter(function(id){return -gbBetween(FAV,id)<=reach()}).slice(1,4).forEach(function(id){
-      lines.push([elim(id),'Also catchable: <b>'+esc(nick(id))+'</b> ('+ord(r.indexOf(id)+1)+'), '+gbTxt(-gbBetween(FAV,id))+' up.']); });
+      lines.push([elim(id),'Also catchable: <b>'+esc(nick(id))+'</b> ('+ord(r.indexOf(id)+1)+'), '+gapTxt(-gbBetween(FAV,id),'up','behind','level')+'.']); });
     r.slice(s,s+2).forEach(function(id){ var gb=gbBetween(FAV,id); lines.push(['&darr;','Watch your back: <b>'+esc(nick(id))+'</b> '+(Math.abs(gb)<.01?'is level with Dallas.':'sits '+gbTxt(gb)+' behind.')]); });
   }
   return '<div class="p '+kind+'">'+side+'<h3>'+title+'</h3><div class="lede">'+lede+'</div><div class="big">'+big+'</div><ul>'+
@@ -1695,7 +1698,7 @@ function teamIn(id){
   var f=S.flt;
   if(f==='all')return true;
   if(f==='dal')return id===FAV||relevant(id);
-  if(f==='race')return inRace(id);
+  if(f==='race')return raceOn()?inRace(id):true;   /* v18: the race view is hidden until 20 games; a saved choice shows every game meanwhile */
   if(f==='W'||f==='E')return confOf(id)===f;
   return divOf(id)===f;
 }
@@ -1710,12 +1713,12 @@ function kindOf(g){
   return 3;
 }
 function renderBoard(){
-  var list=liveNow().filter(isLive).filter(gameIn);
-  list.sort(function(x,y){return (kindOf(x)-kindOf(y))||(new Date(x.date)-new Date(y.date))});
+  /* v18: live games first, then upcoming by tip time, then finals; yesterday's games only while still live */
+  var rk={'in':0,pre:1,post:2};
+  var list=liveNow().filter(function(g){ return gameIn(g)&&(isLive(g)||(S.days[0]||[]).indexOf(g)>=0); });
+  list.sort(function(x,y){return (rk[x.state]-rk[y.state])||(x.state==='pre'?0:(kindOf(x)-kindOf(y)))||(new Date(x.date)-new Date(y.date))});
   var el=$('board');
-  /* v18: with nothing live, the board shows the day's games (upcoming by tip time, then finals) instead of going blank */
   if(!list.length&&S.dayErr){ el.style.height='auto'; el.innerHTML='<div class="boardnote">Scores are not coming through from ESPN just now. Retrying.</div>'; return; }
-  if(!list.length){ var rk={pre:0,post:1}; list=(S.days[0]||[]).filter(gameIn).sort(function(x,y){ return (rk[x.state]-rk[y.state])||(kindOf(x)-kindOf(y))||(new Date(x.date)-new Date(y.date)); }); }
   if(!list.length){
     var up=(S.days[0]||[]).filter(function(g){return g.state==='pre'&&gameIn(g)});
     el.style.height='auto';
@@ -1776,7 +1779,7 @@ function renderSched(){
 /* ---------- routing ---------- */
 function setView(v){
   S.view=v; document.body.className='v-'+v;
-  [].forEach.call(document.querySelectorAll('#nav a'),function(a){ a.className=(a.dataset.v===v||(v==='game'&&a.dataset.v===S.gcTab))?'on':''; });
+  [].forEach.call(document.querySelectorAll('#nav a'),function(a){ a.className=a.dataset.v===v?'on':'';   /* v18: no tab lit inside the game center */ });
 }
 function route(){
   var h=location.hash||('#'+snDefault()), m=h.match(/^#game-(\d+)/);
@@ -2063,13 +2066,13 @@ function snNext(){
   var head='<div class="nx" data-pk="'+nx.id+'">'+imgT(op)+'<div style="min-width:0"><div class="t"><small>'+(home?'vs':'at')+'</small>'+esc(nick(op))+'</div>'+
     '<div class="s">'+(live?'<b style="color:var(--live)">Live '+snScore(nx,FAV)+'</b>':esc(fmtDay(nx.date))+' &middot; '+esc(fmtTime(nx.date)))+(nx.venue?' &middot; '+esc(nx.venue):'')+'</div>'+
     '<div class="s">'+(R2&&R2.w+R2.l?R2.w+'-'+R2.l+(started()?'':' last season'):'')+snFlags(nx)+'</div></div>'+
-    '<div class="w"><b>'+Math.round(mine*100)+'%</b><span>win chance</span></div></div>';
+    '<div class="w"><b>'+Math.round(mine*100)+'%</b><span>win chance, our model</span></div></div>';   /* v18: names its source next to ESPN's */
   $('snNext').innerHTML=snCard(live?'Right now':'Next up',head+'<ul class="wk">'+up.slice(1,8).map(snWk).join('')+'</ul>','',nx.ty===1?'preseason':'');
 }
 function snLast(){
   var gs=snFav(); if(!gs){ $('snLast').innerHTML=''; return; }
   var done=gs.filter(function(x){ return x.st===2; });
-  if(done.some(function(x){ return x.ty===2; })) done=done.filter(function(x){ return x.ty===2; });   /* v18: preseason drops out once a regular season game is final */
+  if(done.some(function(x){ return x.ty!==1; })) done=done.filter(function(x){ return x.ty!==1; });   /* v18: preseason drops out once a regular season, play-in or playoff game is final */
   if(!done.length){ $('snLast').innerHTML=''; return; }
   var l=done[done.length-1], op=snOpp(l,FAV), r=snRes(l,FAV);
   var body='<div class="lr" data-pk="'+l.id+'"><span class="sc '+r+'">'+r+' '+snScore(l,FAV)+'</span>'+imgT(op)+'<div class="m"><b>'+(l.h===FAV?'vs ':'at ')+esc(nick(op))+'</b><br>'+esc(fmtDay(l.date))+(l.ot?' &middot; overtime':'')+' &middot; breakdown &rsaquo;</div></div>'+
@@ -3022,7 +3025,7 @@ function gcPreview(g,C){
 }
 function preWin(g,C){
   var pr=S.gc.js.predictor, ph=null, src='Record model';
-  if(pr&&pr.homeTeam&&pr.homeTeam.gameProjection!=null){ ph=parseFloat(pr.homeTeam.gameProjection)/100; src='ESPN projection'; }
+  if(pr&&pr.homeTeam&&pr.homeTeam.gameProjection!=null){ ph=parseFloat(pr.homeTeam.gameProjection)/100; src='ESPN projection (our model may differ)'; }
   if(ph==null||isNaN(ph)){ RAT={}; ph=pWin(g.h.id,g.a.id); }
   var pa=1-ph;
   var body='<div class="wcx"><div class="wn"><div><b style="color:'+C.a+'">'+Math.round(pa*100)+'%</b><span>'+esc(nick(g.a.id))+'</span></div><div style="text-align:right"><b style="color:'+C.h+'">'+Math.round(ph*100)+'%</b><span>'+esc(nick(g.h.id))+'</span></div></div>'+
@@ -3035,7 +3038,7 @@ function preStake(g){
   var rows=[
     ['Record',function(id){var R=rec(id); return R.w+'-'+R.l}],
     ['Conf seed',function(id){return st?ord(seedOf(id))+' '+confOf(id):'--'}],
-    ['GB 6th',function(id){ if(!st)return '--'; var r=confRank(confOf(id)); var s=r.indexOf(id); return s<6?'+'+gbTxt(gbBetween(id,r[6])):gbTxt(gbBetween(r[5],id)); }],
+    ['GB 6th',function(id){ if(!st)return '--'; var r=confRank(confOf(id)); var s=r.indexOf(id); var d=s<6?gbBetween(id,r[6]):gbBetween(r[5],id); return Math.abs(d)<.01?'0':(s<6?'+':'')+gbTxt(d); }]   /* v18: level reads 0, not +- */,
     ['Net / game',function(id){var R=rec(id); var d=R.w+R.l?R.pf-R.pa:null; return '<span class="'+(d>0?'up':d<0?'dn':'')+'">'+sgn(d)+'</span>'}],
     ['Last 10',function(id){return esc(rec(id).l10||'-')}],
     ['Streak',function(id){return esc(rec(id).strk||'-')}],
@@ -3049,9 +3052,9 @@ function preStake(g){
   h+='</div>';
   var rt=rootFor(g), line='';
   if(g.stype===1)line='Preseason. Nothing counts, but the rotation tells you something.';
-  else if(rt===FAV){ var o=oppOf(g,FAV); line='Dallas is '+(st?ord(seedOf(FAV))+' in the West':'opening the season')+(confOf(o)===confOf(FAV)&&st?', and the '+esc(nick(o))+' are '+gbTxt(Math.abs(gbBetween(o,FAV)))+' games '+(gbBetween(o,FAV)>0?'ahead':'behind')+'.':'.'); }
+  else if(rt===FAV){ var o=oppOf(g,FAV); line='Dallas is '+(st?ord(seedOf(FAV))+' in the West':'opening the season')+(confOf(o)===confOf(FAV)&&st?', and the '+esc(nick(o))+' are '+gapTxt(gbBetween(o,FAV),'games ahead','games behind','level with them')+'.':'.'); }
   else if(rt==='split')line='Two teams in Dallas’s neighborhood. Either way, one of them drops a game.';
-  else if(rt){ var loser=oppOf(g,rt); line='Root for the '+esc(nick(rt))+'. The '+esc(nick(loser))+' are '+gbTxt(Math.abs(gbBetween(loser,FAV)))+' games '+(gbBetween(loser,FAV)>0?'ahead of':'behind')+' Dallas.'; }
+  else if(rt){ var loser=oppOf(g,rt); line='Root for the '+esc(nick(rt))+'. The '+esc(nick(loser))+' are '+gapTxt(gbBetween(loser,FAV),'games ahead of','games behind','level with')+' Dallas.'; }
   return gcard('What’s at stake',(line?'<div class="stake">'+line+'</div>':'')+h);
 }
 function preSeries(g){
