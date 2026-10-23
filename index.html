@@ -2727,14 +2727,7 @@ function gcRender(){
   if(!gc.g){ el.innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; Back</button><h2>Game Center</h2></div><div class="'+(gc.err?'err':'empty')+'">'+(gc.err?'Could not load this game ('+esc(errTxt(gc.err))+'). Retrying.':'Loading the game')+'</div>'; return; }
   var keep={}; [].forEach.call(el.querySelectorAll('[data-keep]'),function(n){keep[n.dataset.keep]=n.scrollTop});
   var g=gc.g, C=pairCols(g);
-  var h=gvRender();   /* v19: the broadcast layout; the v18 layout below is kept unused for reference */
-  if(false){
-    h+=gcMomentum(g,C);
-    h+='<div class="gc-grid"><div class="gc-col gc-box">'+
-      '<div class="o4">'+gcBox(g)+'</div><div class="o7">'+gcPBP(g,C)+'</div></div>'+
-      '<div class="gc-col gc-mid"><div class="o3">'+gcShots(g,C)+'</div><div class="o5">'+gcFlow(g,C)+'</div></div>'+
-      '<div class="gc-col gc-side"><div class="o1">'+gcLine(g)+'</div><div class="o2">'+gcWP(g,C)+'</div><div class="o6">'+gcCompare(g,C)+'</div><div class="o8">'+gcLeaders(g,'Top performers')+'</div><div class="o9">'+gcInj(g)+'</div></div></div>';
-  }
+  var h=gvRender();   /* v19: the broadcast layout */
   el.innerHTML=h;
   [].forEach.call(el.querySelectorAll('[data-keep]'),function(n){ if(keep[n.dataset.keep]!=null)n.scrollTop=keep[n.dataset.keep]; });
 }
@@ -3011,7 +3004,7 @@ function gcInj(g){
   var I=S.gc.js.injuries||[]; if(!I.length)return '';
   var body='<div class="il">'+['a','h'].map(function(k){ var t=g[k].id, e=I.filter(function(x){return String(x.team&&x.team.id)===t})[0], list=(e&&e.injuries)||[];
     return '<h4>'+imgT(t)+esc(nick(t))+'</h4>'+(list.length?list.map(function(x){ var a=x.athlete||{}, d=x.details||{};
-      return '<div'+(a.id?' data-plid="'+esc(a.id)+'" data-pname="'+esc(a.displayName||'')+'" title="Player card"':'')+'><b>'+esc(a.displayName||'')+'</b><span>'+esc(((a.position||{}).abbreviation||'')+(d.type?' · '+d.type:''))+'</span><span>'+esc(x.status||'')+'</span></div>'; }).join(''):'<div><span>Nobody listed</span></div>');
+      return '<div'+(a.id?' data-plid="'+esc(a.id)+'" data-pname="'+esc(a.displayName||'')+'" title="Player card"':'')+'><b>'+esc(a.displayName||'')+'</b><span>'+esc(((a.position||{}).abbreviation||'')+(d.type?' · '+d.type:''))+'</span><span>'+esc(x.status||'')+'</span></div>'; }).join(''):'<div class="none">Nobody listed</div>');
   }).join('')+'</div>';
   return gcard('Injury report',body);
 }
@@ -3066,7 +3059,7 @@ function preSeries(g){
     var res=done?(aa.winner?'<b>'+esc(ab(aw))+' '+esc(aa.score)+'</b>, '+esc(ab(ha))+' '+esc(hh.score):esc(ab(aw))+' '+esc(aa.score)+', <b>'+esc(ab(ha))+' '+esc(hh.score)+'</b>'):(me?'this game':esc(fmtTime(e.date)));
     return '<tr'+(me?'':' data-pk="'+esc(e.id)+'"')+'><td>'+esc(fmtDay(e.date))+'</td><td><span class="op">'+imgT(aw)+'@ '+imgT(ha)+'</span></td><td class="rs">'+res+'</td></tr>';
   }).join('');
-  return gcard('Season series','<div class="stake" style="border-left-color:var(--dim)">'+esc(ss.summary||'')+'</div><table class="tsch"><tbody>'+rows+'</tbody></table>');
+  return gcard('Season series',(ss.summary?'<div class="stake" style="border-left-color:var(--dim)">'+esc(ss.summary)+'</div>':'')+'<table class="tsch"><tbody>'+rows+'</tbody></table>');
 }
 function preForm(g){
   var body=['a','h'].map(function(k){ var t=g[k].id, l=schedOf(t);
@@ -3122,7 +3115,7 @@ function gvScorebug(g,C){
     if(live){
       if(cp.timeoutsRemaining!=null){ var n=+cp.timeoutsRemaining, d=''; for(var i=0;i<7;i++)d+='<i class="'+(i<n?'on':'')+'"></i>'; extra+='<span class="sb-to" title="Timeouts left">'+d+'<em>'+n+' TO</em></span>'; }
       if(f.teamFoulsCurrent!=null)extra+='<span class="sb-fl">Fouls '+esc(f.teamFoulsCurrent)+'</span>';
-      if(f.bonusState&&f.bonusState!=='NONE')extra+='<span class="sb-bonus">'+(/double/i.test(f.bonusState)?'Double bonus':'Bonus')+'</span>';
+      if(f.bonusState&&f.bonusState!=='NONE')extra+='<span class="sb-bonus">'+'Bonus'+'</span>';
       if(cp.possession)extra+='<span class="sb-pos" title="Possession">&#9679;</span>';
     }
     var cls='sb-t '+k+(lead===k?' lead':'')+(lead&&lead!==k?' trail':'')+(fin&&!t.win?' lose':'')+(fin&&t.win?' won':'');
@@ -3150,10 +3143,10 @@ function gvLeaders(g,C,title){
   function cat(k,re){ var e=L.filter(function(x){return String(x.team&&x.team.id)===g[k].id})[0]; return ((e&&e.leaders)||[]).filter(function(c){return re.test(c.name)})[0]; }
   var rows=[['Points',/^points/],['Rebounds',/^rebounds/],['Assists',/^assists/]].map(function(r){
     function cell(k){ var c=cat(k,r[1]), p=c&&(c.leaders||[])[0]; if(!p)return '<div class="ld '+k+'"></div>'; var a=p.athlete||{}, hs=(a.headshot&&a.headshot.href)||shot(a.id);
-      var ln=g.state!=='pre'?gvLine(g,a.id):esc((c.shortDisplayName||c.displayName||'')+' per game');
-      return '<div class="ld '+k+'"'+(a.id?' data-plid="'+esc(a.id)+'" data-pname="'+esc(a.displayName||'')+'" title="Player card"':'')+' style="--tc:'+C[k]+'"><img src="'+esc(hs)+'" data-hide="1" alt="" loading="lazy"><div class="ld-t"><b>'+esc(a.shortName||a.displayName||'')+'</b><span>'+(ln||esc(p.shortDisplayValue||p.displayValue||''))+'</span></div><em>'+esc(p.displayValue)+'</em></div>'; }
+      var ln=g.state!=='pre'?gvLine(g,a.id):esc({Points:'PPG',Rebounds:'RPG',Assists:'APG'}[r[0]]||'per game');
+      return '<div class="ld '+k+'"'+(a.id?' data-plid="'+esc(a.id)+'" data-pname="'+esc(a.displayName||'')+'" title="Player card"':'')+' style="--tc:'+C[k]+'"><img src="'+esc(hs)+'" data-hide="1" alt="" loading="lazy"><div class="ld-t"><b>'+esc(a.displayName||a.shortName||'')+'<i>'+esc(ab(g[k].id))+'</i></b><span>'+(ln||esc(p.shortDisplayValue||p.displayValue||''))+'</span></div><em>'+esc(p.displayValue)+'</em></div>'; }
     return '<div class="ldr"><div class="ldk">'+r[0]+'</div>'+cell('a')+cell('h')+'</div>'; }).join('');
-  return gvCard(title||'Game leaders','<div class="lds2"><div class="ldhd"><span>'+imgT(g.a.id)+esc(ab(g.a.id))+'</span><span>'+esc(ab(g.h.id))+imgT(g.h.id)+'</span></div>'+rows+'</div>');
+  return gvCard(title||'Game leaders','<div class="lds2">'+rows+'</div>');
 }
 function gvLast(g,C){
   var pl=(S.gc.js.plays||[]); if(!pl.length)return '';
@@ -3184,7 +3177,9 @@ function gvChart(g,C){
     Y=function(v){return pt+(1-v)*ih}; fmt=function(v){return Math.round(v*100)+'%'};
   } else {
     var la=-1,lh=-1; pts.push([0,0]);
+    sc=sc.map(function(p,i){return [tOf(p),i,p]}).sort(function(x,y){return x[0]-y[0]||x[1]-y[1]}).map(function(x){return x[2]});   /* v19 fix: game time order, not feed order */
     sc.forEach(function(p){ if(p.awayScore===la&&p.homeScore===lh)return; la=p.awayScore; lh=p.homeScore; var m=pv==='a'?la-lh:lh-la; big=Math.max(big,Math.abs(m)); pts.push([tOf(p),m]); });
+    if(g.a.score!=null&&g.h.score!=null){ var hm=pv==='a'?g.a.score-g.h.score:g.h.score-g.a.score; if(pts[pts.length-1][1]!==hm)pts.push([pts[pts.length-1][0],hm]); big=Math.max(big,Math.abs(hm)); }   /* v19 fix: ends on the scorebug's score */
     big=Math.ceil(big/10)*10; Y=function(m){return pt+ih/2-m/big*(ih/2)}; fmt=function(m){return m>0?'+'+m:m<0?String(m):'Level'};
   }
   var last=pts[pts.length-1], endT=isFinal(g)?maxT:last[0];
@@ -3196,8 +3191,10 @@ function gvChart(g,C){
   for(var s=0;s<maxT;s+=(s<2880?720:300)){ q++; var e=Math.min(maxT,s+(s<2880?720:300));
     if(s)grid+='<line class="qd" x1="'+X(s)+'" y1="'+pt+'" x2="'+X(s)+'" y2="'+(pt+ih)+'"/>';
     lab+='<text class="ax" x="'+((X(s)+X(e))/2).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle">'+qName(q)+'</text>'; }
-  var yl=md==='wp'?[[1,'100'],[.75,'75'],[.5,'50'],[.25,'75'],[0,'100']]:[[big,'+'+big],[big/2,'+'+big/2],[0,'0'],[-big/2,'+'+big/2],[-big,'+'+big]];
-  var ys=yl.map(function(y,i){ return '<line class="'+(i===2?'mid':'yg')+'" x1="'+pl+'" y1="'+Y(y[0]).toFixed(1)+'" x2="'+(W-pr)+'" y2="'+Y(y[0]).toFixed(1)+'"/><text class="ax" x="'+(pl-4)+'" y="'+(Y(y[0])+3).toFixed(1)+'" text-anchor="end"'+(i<2?' style="fill:'+C[pv]+'"':i>2?' style="fill:'+C[ot]+'"':'')+'>'+y[1]+'</text>'; }).join('');
+  var yl=md==='wp'?[[1,'100'],[.75,'75'],[.5,'50'],[.25,'25'],[0,'0']]:[[big,'+'+big],[big/2,'+'+big/2],[0,'0'],[-big/2,'-'+big/2],[-big,'-'+big]];   /* v19 fix: each value once, read from the top team's side */
+  var ys=yl.map(function(y,i){ return '<line class="'+(i===2?'mid':'yg')+'" x1="'+pl+'" y1="'+Y(y[0]).toFixed(1)+'" x2="'+(W-pr)+'" y2="'+Y(y[0]).toFixed(1)+'"/><text class="ax" x="'+(pl-4)+'" y="'+(Y(y[0])+3).toFixed(1)+'" text-anchor="end"'+(i<2?' style="fill:'+C[pv]+'"':i>2?' style="fill:'+C[ot]+'"':'')+'>'+y[1]+'</text>'; }).join('')+
+    '<text class="tl" x="'+(pl+5)+'" y="'+(pt+10)+'" style="fill:'+C[pv]+'">'+esc(ab(g[pv].id))+(md==='wp'?' win %':' ahead')+'</text>'+
+    '<text class="tl" x="'+(pl+5)+'" y="'+(pt+ih-4)+'" style="fill:'+C[ot]+'">'+esc(ab(g[ot].id))+(md==='wp'?' favoured':' ahead')+'</text>';
   var cid='gv'+md, nowX=X(endT), nowY=Y(last[1]);
   var svg='<svg class="gv-ch" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(md==='wp'?'Win probability':'Lead')+' chart"><defs><clipPath id="'+cid+'T"><rect x="0" y="0" width="'+W+'" height="'+mid+'"/></clipPath><clipPath id="'+cid+'B"><rect x="0" y="'+mid+'" width="'+W+'" height="'+H+'"/></clipPath></defs>'+
     ys+grid+'<path d="'+area+'" fill="'+C[pv]+'" opacity=".22" clip-path="url(#'+cid+'T)"/><path d="'+area+'" fill="'+C[ot]+'" opacity=".22" clip-path="url(#'+cid+'B)"/>'+
@@ -3245,9 +3242,9 @@ function gvPBP(g,C){
       var link=shotOK(p)?'<button class="lnk" data-gc="hl" data-v="'+esc(p.id)+'">chart</button>':'';
       var ld=p.awayScore>p.homeScore?'a':p.homeScore>p.awayScore?'h':'';
       return '<div class="gp'+(scp?' sc':'')+(gc.hl===String(p.id)?' hl':'')+'" style="--tc:'+(k?C[k]:'transparent')+'"><span class="ck">'+esc((p.clock||{}).displayValue||'')+'</span>'+(k?imgT(tid):'<span></span>')+
-        '<span class="tx">'+linkNames(esc(p.text||''))+' '+link+'</span>'+(scp?'<span class="gsc"><b class="'+(ld==='a'?'ld':'')+'">'+p.awayScore+'</b>-<b class="'+(ld==='h'?'ld':'')+'">'+p.homeScore+'</b></span>':'<span></span>')+'</div>';
+        '<span class="tx">'+linkNames(esc(p.text||''))+' '+link+'</span>'+(scp?'<span class="gsc"><b class="'+(ld==='a'?'lead':'')+'">'+p.awayScore+'</b>-<b class="'+(ld==='h'?'lead':'')+'">'+p.homeScore+'</b></span>':'<span></span>')+'</div>';
     }).join('');
-    return '<details class="gq" data-per="'+n+'"'+(open?' open':'')+'><summary><b>'+(n<=4?'Quarter '+n:qName(n))+'</b><span class="qs">'+esc(ab(g.a.id))+' '+qa+' &middot; '+esc(ab(g.h.id))+' '+qh+'</span></summary><div class="gpx" data-keep="pbp'+n+'"><div class="gp gp-h"><span>Time</span><span></span><span>Play</span><span>'+esc(ab(g.a.id))+'-'+esc(ab(g.h.id))+'</span></div>'+(rows||'<div class="empty">No scoring plays.</div>')+'</div></details>';
+    return '<details class="gq" data-per="'+n+'"'+(open?' open':'')+'><summary><b>'+(n<=4?'Quarter '+n:qName(n))+'</b><span class="qs">'+esc(ab(g.a.id))+' '+qa+' &middot; '+esc(ab(g.h.id))+' '+qh+'</span></summary><div class="gpx" data-keep="pbp'+n+'"><div class="gp gp-h"><span>Time</span><span></span><span>Play</span><span>Score</span></div>'+(rows||'<div class="empty">No scoring plays.</div>')+'</div></details>';
   }).join('');
   return '<div class="gv-tabhd">'+seg('pf',only?'sc':'all',[['all','All plays'],['sc','Scoring only']])+'<span class="gv-hint">'+plays.length+' plays'+(isLive(g)?', newest first':'')+'</span></div>'+html;
 }
@@ -3276,8 +3273,11 @@ function gvStats(g,C){
   var rh='<div class="gv-sub"><h4>Biggest runs</h4>'+(runs.slice(0,4).map(function(r){ return '<div>'+imgT(r.t)+'<b>'+r.n+'-0</b><span>'+esc(ab(r.t))+' &middot; '+qName(r.s.period.number)+' '+esc(r.s.clock.displayValue)+' to '+(r.e.period.number!==r.s.period.number?qName(r.e.period.number)+' ':'')+esc(r.e.clock.displayValue)+'</span></div>'; }).join('')||'<div><span>No 8-0 runs yet.</span></div>')+(lc!=null?'<div><span>Lead changes</span><b>'+esc(lc)+'</b></div>':'')+'</div>';
   var wp=S.gc.js.winprobability||[], sw=[];
   if(wp.length){ var byId={}; pl.forEach(function(p){byId[String(p.id)]=p}); var pv=persp(g), pts=[];
-    wp.forEach(function(w){ var p=byId[String(w.playId)]; if(p)pts.push({v:pv==='h'?+w.homeWinPercentage:1-w.homeWinPercentage, p:p}); });
-    for(var i=1;i<pts.length;i++)sw.push({d:pts[i].v-pts[i-1].v, p:pts[i].p}); sw.sort(function(a,b){return Math.abs(b.d)-Math.abs(a.d)}); }
+    var seen={};
+    wp.forEach(function(w,i){ var k=String(w.playId), p=byId[k]; if(!p||seen[k])return; seen[k]=1; pts.push({v:pv==='h'?+w.homeWinPercentage:1-w.homeWinPercentage, p:p, t:tOf(p), i:i}); });
+    pts.sort(function(a,b){return a.t-b.t||a.i-b.i});   /* v19 fix: game time order, each play once */
+    pts=pts.filter(function(q,i){ return i===0||(q.p.team&&!/challenge|review|timeout|end of|start of|jump ball|delay/i.test(((q.p.type||{}).text||'')+' '+(q.p.text||''))); });
+    for(var i=1;i<pts.length;i++)if(Math.abs(pts[i].v-pts[i-1].v)>=.01)sw.push({d:pts[i].v-pts[i-1].v, p:pts[i].p}); sw.sort(function(a,b){return Math.abs(b.d)-Math.abs(a.d)}); }
   var swh=sw.length?'<div class="gv-sub swings2"><h4>Biggest win probability swings, '+esc(ab(g[persp(g)].id))+' view</h4>'+sw.slice(0,4).map(function(s){ return '<div><span class="wpa '+(s.d>0?'g':'r')+'">'+(s.d>0?'+':'')+Math.round(s.d*100)+'</span><span class="in">'+qName(s.p.period.number)+' '+esc(s.p.clock.displayValue)+'</span><span class="t2">'+esc(s.p.text||'')+'</span></div>'; }).join('')+'</div>':'';
   return '<div class="gv-stats">'+hd+rows+'</div><div class="gv-subs">'+rh+swh+'</div>';
 }
@@ -3541,7 +3541,7 @@ table.sb-ls th{font-size:9.5px; font-weight:700; color:var(--dim); padding:0 7px
 table.sb-ls td{padding:2px 7px; text-align:center; color:var(--mute); min-width:22px}
 table.sb-ls td.t{text-align:left; font-weight:700; color:var(--ink); padding-left:0}
 table.sb-ls td.w{color:var(--ink)}
-table.sb-ls .cur{color:var(--live)} table.sb-ls th.cur{color:var(--live)}
+table.sb-ls th.cur{color:var(--live)} table.sb-ls td.cur{background:rgba(255,255,255,.06); border-radius:3px}
 table.sb-ls .T{font-weight:800; color:var(--ink); border-left:1px solid rgba(255,255,255,.1); padding-left:9px}
 .sb-meta{font-size:11px; color:var(--dim); text-align:center} .sb-meta b{color:var(--mute); font-weight:700}
 .sb[data-tid] , .sb-t[data-tid]{cursor:pointer}
@@ -3605,12 +3605,14 @@ details.gq>summary .qs{margin-left:auto; font-size:12px; color:var(--mute); font
 .gp img{width:18px; height:18px; object-fit:contain}
 .gp .ck{font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums}
 .gp .gsc{text-align:right; font-family:var(--display); font-size:16px; color:var(--mute); white-space:nowrap}
-.gp .gsc b{font-weight:600} .gp .gsc b.ld{color:var(--ink); font-weight:700}
+.gp .gsc b{font-weight:600} .gp .gsc b.lead{color:var(--ink); font-weight:700}
 .gp.sc{border-left-color:var(--tc); background:color-mix(in srgb,var(--tc) 9%,transparent); color:var(--ink)}
 .gp.sc .tx{font-weight:600}
 .gp.hl{box-shadow:inset 0 0 0 1px #fff}
 .gp-h{font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); font-weight:700; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); z-index:1}
-.gp-h span:last-child{text-align:right}
+.gp-h span:last-child{text-align:right; white-space:nowrap}
+svg.gv-ch .tl{font:700 9px var(--body); letter-spacing:.06em; opacity:.9}
+.il div.none{color:var(--dim); justify-content:flex-start}
 /* team stats */
 .gv-stats{max-width:760px; margin:0 auto}
 .sr{display:grid; grid-template-columns:90px minmax(0,1fr) 90px; align-items:end; row-gap:6px; padding:9px 0}
@@ -3653,18 +3655,17 @@ svg.gv-ch .qd{stroke:rgba(255,255,255,.09); stroke-width:1}
 svg.gv-ch .now{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 3}
 .gv-mf .mflow{margin:0}
 /* leaders */
-.ldhd{display:flex; justify-content:space-between; font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--mute); margin-bottom:4px}
-.ldhd span{display:flex; align-items:center; gap:6px} .ldhd img{width:20px; height:20px; object-fit:contain}
-.ldr{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); column-gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,.05)}
-.ldk{grid-column:1/-1; text-align:center; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); font-weight:700; margin-bottom:4px}
-.ld{display:flex; align-items:center; gap:8px; min-width:0; cursor:pointer}
-.ld.h{flex-direction:row-reverse; text-align:right}
-.ld img{width:38px; height:38px; border-radius:50%; object-fit:cover; object-position:top; background:color-mix(in srgb,var(--tc) 30%,var(--card2)); flex:none}
-.ld-t{min-width:0; display:flex; flex-direction:column}
-.ld-t b{font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.ld-t span{font-size:10.5px; color:var(--dim); line-height:1.3}
-.ld em{font-style:normal; font-family:var(--display); font-weight:700; font-size:24px; line-height:1; margin-left:auto; flex:none}
-.ld.h em{margin-left:0; margin-right:auto}
+/* v19 fix: leaders one player per row */
+.ldr{padding:8px 0 4px; border-top:1px solid rgba(255,255,255,.05)}
+.ldr:first-child{border-top:0; padding-top:0}
+.ldk{font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); font-weight:700; margin-bottom:4px}
+.ld{display:flex; align-items:center; gap:10px; min-width:0; cursor:pointer; padding:4px 0}
+.ld img{width:36px; height:36px; border-radius:50%; object-fit:cover; object-position:top; background:color-mix(in srgb,var(--tc) 30%,var(--card2)); flex:none; box-shadow:0 0 0 2px var(--tc)}
+.ld-t{min-width:0; flex:1; display:flex; flex-direction:column}
+.ld-t b{font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ld-t b i{font-style:normal; font-size:10px; font-weight:700; color:var(--dim); margin-left:6px; letter-spacing:.05em}
+.ld-t span{font-size:11px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.ld em{font-style:normal; font-family:var(--display); font-weight:700; font-size:26px; line-height:1; flex:none; min-width:44px; text-align:right}
 .gv-pre{display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:16px; align-items:start}
 .gv-pre .r6{grid-column:1/-1}
 #gc .gv-pre .gcard{height:100%}
@@ -3704,7 +3705,7 @@ svg.gv-ch .now{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 
   .sr{grid-template-columns:64px minmax(0,1fr) 64px} .sr>b{font-size:19px}
   .gv-subs{grid-template-columns:1fr}
   .gv-now b{font-size:30px}
-  .ld-t span{display:none} .ld em{font-size:22px}
+  .ld em{font-size:24px}
 }
 </style>
 <script>
