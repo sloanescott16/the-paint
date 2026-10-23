@@ -3143,7 +3143,7 @@ function gvBoxTeam(g,k){ var bp=((S.gc.js.boxscore||{}).players)||[], id=g[k].id
 function gvIx(st){ var ix={}; (st.names||st.labels||[]).forEach(function(n,i){ix[n]=i}); return ix; }
 function gvLine(g,aid){ var out=''; ['a','h'].forEach(function(k){ var st=gvBoxTeam(g,k); if(!st||out)return; var ix=gvIx(st);
     (st.athletes||[]).forEach(function(a){ if(out||String((a.athlete||{}).id)!==String(aid)||!a.stats||!a.stats.length)return; var s=a.stats;
-      out=[[s[ix.PTS],'PTS'],[s[ix.REB],'REB'],[s[ix.AST],'AST']].filter(function(x){return x[0]!=null}).map(function(x){return x[0]+' '+x[1]}).join(', ')+(s[ix.FG]?' &middot; '+esc(s[ix.FG])+' FG':''); }); });
+      out=[[s[ix.PTS],'PTS'],[s[ix.REB],'REB'],[s[ix.AST],'AST']].filter(function(x){return x[0]!=null}).map(function(x){return x[0]+' '+x[1]}).join(', '); }); });
   return out; }
 function gvLeaders(g,C,title){
   var L=S.gc.js.leaders||[]; if(!L.length)return '';
@@ -3185,7 +3185,7 @@ function gvChart(g,C){
   } else {
     var la=-1,lh=-1; pts.push([0,0]);
     sc.forEach(function(p){ if(p.awayScore===la&&p.homeScore===lh)return; la=p.awayScore; lh=p.homeScore; var m=pv==='a'?la-lh:lh-la; big=Math.max(big,Math.abs(m)); pts.push([tOf(p),m]); });
-    big=Math.ceil(big/5)*5; Y=function(m){return pt+ih/2-m/big*(ih/2)}; fmt=function(m){return m>0?'+'+m:m<0?String(m):'Level'};
+    big=Math.ceil(big/10)*10; Y=function(m){return pt+ih/2-m/big*(ih/2)}; fmt=function(m){return m>0?'+'+m:m<0?String(m):'Level'};
   }
   var last=pts[pts.length-1], endT=isFinal(g)?maxT:last[0];
   var d='', prev=null;
@@ -3245,7 +3245,7 @@ function gvPBP(g,C){
       var link=shotOK(p)?'<button class="lnk" data-gc="hl" data-v="'+esc(p.id)+'">chart</button>':'';
       var ld=p.awayScore>p.homeScore?'a':p.homeScore>p.awayScore?'h':'';
       return '<div class="gp'+(scp?' sc':'')+(gc.hl===String(p.id)?' hl':'')+'" style="--tc:'+(k?C[k]:'transparent')+'"><span class="ck">'+esc((p.clock||{}).displayValue||'')+'</span>'+(k?imgT(tid):'<span></span>')+
-        '<span class="tx">'+linkNames(esc(p.text||''))+' '+link+'</span>'+(scp?'<span class="gs"><b class="'+(ld==='a'?'ld':'')+'">'+p.awayScore+'</b>-<b class="'+(ld==='h'?'ld':'')+'">'+p.homeScore+'</b></span>':'<span></span>')+'</div>';
+        '<span class="tx">'+linkNames(esc(p.text||''))+' '+link+'</span>'+(scp?'<span class="gsc"><b class="'+(ld==='a'?'ld':'')+'">'+p.awayScore+'</b>-<b class="'+(ld==='h'?'ld':'')+'">'+p.homeScore+'</b></span>':'<span></span>')+'</div>';
     }).join('');
     return '<details class="gq" data-per="'+n+'"'+(open?' open':'')+'><summary><b>'+(n<=4?'Quarter '+n:qName(n))+'</b><span class="qs">'+esc(ab(g.a.id))+' '+qa+' &middot; '+esc(ab(g.h.id))+' '+qh+'</span></summary><div class="gpx" data-keep="pbp'+n+'"><div class="gp gp-h"><span>Time</span><span></span><span>Play</span><span>'+esc(ab(g.a.id))+'-'+esc(ab(g.h.id))+'</span></div>'+(rows||'<div class="empty">No scoring plays.</div>')+'</div></details>';
   }).join('');
@@ -3601,11 +3601,11 @@ details.gq[open]>summary::before{transform:rotate(90deg)}
 details.gq>summary b{font-family:var(--display); font-size:17px; font-weight:700; letter-spacing:.03em; text-transform:uppercase}
 details.gq>summary .qs{margin-left:auto; font-size:12px; color:var(--mute); font-weight:600}
 .gpx{max-height:620px; overflow-y:auto}
-.gp{display:grid; grid-template-columns:44px 22px minmax(0,1fr) 64px; gap:10px; align-items:center; padding:7px 8px 7px 10px; font-size:12.5px; color:var(--mute); border-left:3px solid transparent; border-bottom:1px solid rgba(255,255,255,.035)}
+.gp{display:grid; grid-template-columns:44px 22px minmax(0,1fr) 76px; gap:10px; align-items:center; padding:7px 8px 7px 10px; font-size:12.5px; color:var(--mute); border-left:3px solid transparent; border-bottom:1px solid rgba(255,255,255,.035)}
 .gp img{width:18px; height:18px; object-fit:contain}
 .gp .ck{font-size:11px; color:var(--dim); font-variant-numeric:tabular-nums}
-.gp .gs{text-align:right; font-family:var(--display); font-size:16px; color:var(--mute); white-space:nowrap}
-.gp .gs b{font-weight:600} .gp .gs b.ld{color:var(--ink); font-weight:700}
+.gp .gsc{text-align:right; font-family:var(--display); font-size:16px; color:var(--mute); white-space:nowrap}
+.gp .gsc b{font-weight:600} .gp .gsc b.ld{color:var(--ink); font-weight:700}
 .gp.sc{border-left-color:var(--tc); background:color-mix(in srgb,var(--tc) 9%,transparent); color:var(--ink)}
 .gp.sc .tx{font-weight:600}
 .gp.hl{box-shadow:inset 0 0 0 1px #fff}
@@ -3678,7 +3678,7 @@ svg.gv-ch .now{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 
   .gv{grid-template-columns:minmax(0,1fr)}
   .gv-main,.gv-rail{display:contents}
   .gv .r1{order:1}.gv .r2{order:2}.gv .r3{order:3}.gv .r4{order:4}.gv .r5{order:5}.gv .r6{order:6}.gv .r7{order:7}.gv .r8{order:8}
-  .gv>div>div{margin-bottom:14px}
+  .gv>div>div:empty{display:none}
 }
 @media (max-width:760px){
   .sb{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); border-radius:12px; margin-bottom:12px}
@@ -3704,6 +3704,7 @@ svg.gv-ch .now{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 
   .sr{grid-template-columns:64px minmax(0,1fr) 64px} .sr>b{font-size:19px}
   .gv-subs{grid-template-columns:1fr}
   .gv-now b{font-size:30px}
+  .ld-t span{display:none} .ld em{font-size:22px}
 }
 </style>
 <script>
