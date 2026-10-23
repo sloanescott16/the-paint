@@ -1738,7 +1738,7 @@ function renderBoard(){
     function br(side){ var t=g[side], cl='br';
       if(k===1&&rt&&rt!=='split')cl+=t.id===rt?' pull':' fear';
       var o=g[side==='h'?'a':'h']; if(t.score!=null&&o.score!=null&&t.score<o.score)cl+=' lose';
-      return '<div class="'+cl+'">'+imgT(t.id)+'<span class="ba">'+esc(ab(t.id))+'</span><span class="bs">'+(t.score==null?'':t.score)+'</span></div>'; }
+      return '<div class="'+cl+'">'+imgT(t.id)+'<span class="ba">'+esc(ab(t.id))+'</span><span class="bs">'+(g.state==='pre'||t.score==null?'':t.score)+'</span></div>'; }
     var ld=[g.a,g.h].filter(function(x){return x.lead}).map(function(x){return esc(ab(x.id))+' <b>'+esc(x.lead.n)+' '+esc(x.lead.v)+'</b>'}).join(' &middot; ');
     return '<div class="'+cls+'" data-pk="'+g.id+'">'+(rib?'<span class="ribbon">'+rib+'</span>':'')+
       '<div class="bt">'+chip+'<span class="bst'+(isLive(g)?' live':'')+'">'+esc(statusTxt(g))+'</span></div>'+br('a')+br('h')+
