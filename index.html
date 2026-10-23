@@ -432,7 +432,7 @@ svg.dia rect.on{fill:var(--warn); stroke:var(--warn)}
 .cnt i.b{background:var(--good); border-color:var(--good)} .cnt i.s{background:var(--bad); border-color:var(--bad)} .cnt i.o{background:var(--warn); border-color:var(--warn)}
 
 .gc-grid{display:grid; gap:12px; align-items:start;
-  grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr); grid-template-areas:"box mid side"}
+  grid-template-columns:minmax(0,1.45fr) minmax(0,1.15fr) minmax(0,.95fr); grid-template-areas:"box mid side"}   /* v18: the box score gets the widest column, all 13 columns show at 1440 */
 .gc-col{display:flex; flex-direction:column; gap:12px; min-width:0}
 .gc-box{grid-area:box} .gc-mid{grid-area:mid} .gc-side{grid-area:side}
 @media (max-width:1180px){ .gc-grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); grid-template-areas:"mid side" "box side"} }
@@ -1370,10 +1370,13 @@ function gbBetween(a,b){var A=rec(a),B=rec(b); return ((A.w-B.w)+(B.l-A.l))/2} /
 function gbTxt(n){ if(Math.abs(n)<.01)return '-'; var s=Math.abs(n); return (s%1?s.toFixed(1):String(s)); }
 function reach(){ return Math.max(5, left(FAV)*0.3) }
 function relevant(id){ return id!==FAV && confOf(id)===confOf(FAV) && Math.abs(gbBetween(id,FAV))<=reach() }
-function inRace(id){ var r=confRank(confOf(id)); var i=r.indexOf(id); if(i<10)return true; return gbBetween(r[9],id)<=Math.max(4,left(id)*0.2) }
+/* v18: the race labels wait until Dallas has 20 games played; one game in, every team was "in the race" */
+function raceOn(){ return gp(FAV)>=20; }
+function inRace(id){ if(!raceOn())return false; var r=confRank(confOf(id)); var i=r.indexOf(id); if(i<10)return true; return gbBetween(r[9],id)<=Math.max(4,left(id)*0.2) }
 function blockers(n){ return confRank(confOf(FAV)).filter(relevant).sort(function(x,y){return Math.abs(gbBetween(x,FAV))-Math.abs(gbBetween(y,FAV))}).slice(0,n||4) }
 function rootFor(g){
   if(hasT(g,FAV))return FAV;
+  if(!raceOn())return null;
   var h=g.h.id,a=g.a.id,rh=relevant(h),ra=relevant(a);
   if(!rh&&!ra)return null;
   if(rh&&!ra)return a; if(ra&&!rh)return h;
@@ -1391,8 +1394,10 @@ function loadPrior(){
 }
 function dayUrl(off){return API+'/scoreboard?dates='+ymd(dayShift(off))+'&limit=100'}
 function loadDay(off){
+  /* v18: a failed scoreboard call is remembered (S.dayErr) so an outage never reads as a day with no games */
   return j(dayUrl(off)).then(function(js){ var list=(js.events||[]).map(normEv).filter(Boolean);
-    list.sort(function(x,y){return new Date(x.date)-new Date(y.date)}); S.days[off]=list; if(off===0)S.today=list; return list; });
+    list.sort(function(x,y){return new Date(x.date)-new Date(y.date)}); S.days[off]=list; if(off===0){S.today=list; S.dayErr=false;} return list; },
+    function(e){ if(off===0)S.dayErr=true; throw e; });
 }
 function loadToday(){
   var p=[loadDay(0)];
@@ -1601,7 +1606,7 @@ function pathCard(kind){
     lines.push([e,'<b>'+esc(nick(tgt))+'</b> wins plus Dallas losses: '+e+' more and '+ord(cut)+' is out of reach.']);
     r.slice(0,cut).reverse().filter(function(id){return -gbBetween(FAV,id)<=reach()}).slice(1,4).forEach(function(id){
       lines.push([elim(id),'Also catchable: <b>'+esc(nick(id))+'</b> ('+ord(r.indexOf(id)+1)+'), '+gbTxt(-gbBetween(FAV,id))+' up.']); });
-    r.slice(s,s+2).forEach(function(id){ lines.push(['&darr;','Watch your back: <b>'+esc(nick(id))+'</b> sits '+gbTxt(gbBetween(FAV,id))+' behind.']); });
+    r.slice(s,s+2).forEach(function(id){ var gb=gbBetween(FAV,id); lines.push(['&darr;','Watch your back: <b>'+esc(nick(id))+'</b> '+(Math.abs(gb)<.01?'is level with Dallas.':'sits '+gbTxt(gb)+' behind.')]); });
   }
   return '<div class="p '+kind+'">'+side+'<h3>'+title+'</h3><div class="lede">'+lede+'</div><div class="big">'+big+'</div><ul>'+
     lines.map(function(l){return '<li><span class="k">'+l[0]+'</span><span>'+l[1]+'</span></li>'}).join('')+'</ul></div>';
@@ -1708,10 +1713,13 @@ function renderBoard(){
   var list=liveNow().filter(isLive).filter(gameIn);
   list.sort(function(x,y){return (kindOf(x)-kindOf(y))||(new Date(x.date)-new Date(y.date))});
   var el=$('board');
+  /* v18: with nothing live, the board shows the day's games (upcoming by tip time, then finals) instead of going blank */
+  if(!list.length&&S.dayErr){ el.style.height='auto'; el.innerHTML='<div class="boardnote">Scores are not coming through from ESPN just now. Retrying.</div>'; return; }
+  if(!list.length){ var rk={pre:0,post:1}; list=(S.days[0]||[]).filter(gameIn).sort(function(x,y){ return (rk[x.state]-rk[y.state])||(kindOf(x)-kindOf(y))||(new Date(x.date)-new Date(y.date)); }); }
   if(!list.length){
     var up=(S.days[0]||[]).filter(function(g){return g.state==='pre'&&gameIn(g)});
     el.style.height='auto';
-    el.innerHTML='<div class="boardnote">No games live'+(S.flt!=='all'?' in this view':'')+'. '+(up.length?'Next tip: '+esc(ab(up[0].a.id))+' at '+esc(ab(up[0].h.id))+', '+esc(fmtTime(up[0].date))+'. ':'')+'<a href="#sched">Open the schedule</a></div>';
+    el.innerHTML='<div class="boardnote">No games today'+(S.flt!=='all'?' in this view':'')+'. '+(up.length?'Next tip: '+esc(ab(up[0].a.id))+' at '+esc(ab(up[0].h.id))+', '+esc(fmtTime(up[0].date))+'. ':'')+'<a href="#sched">Open the schedule</a></div>';
     return;
   }
   el.style.height='';
@@ -1719,7 +1727,7 @@ function renderBoard(){
   if(innerWidth<900)c=Math.min(c,2);
   el.style.setProperty('--c',c);
   el.innerHTML=list.map(function(g){
-    var k=kindOf(g), rt=rootFor(g), cls='bg live', rib='', chip='';
+    var k=kindOf(g), rt=rootFor(g), cls='bg'+(isLive(g)?' live':''), rib='', chip='';
     if(k===0){cls+=' key fav'; rib='Mavericks';}
     else if(k===1){cls+=' key'; rib='Matters to Dallas'; chip=rt==='split'?'<span class="bchip split">Either way</span>':'<span class="bchip root">Root for '+esc(ab(rt))+'</span>';}
     else if(k===2){cls+=' key race'; rib='Playoff race';}
@@ -1730,7 +1738,7 @@ function renderBoard(){
       return '<div class="'+cl+'">'+imgT(t.id)+'<span class="ba">'+esc(ab(t.id))+'</span><span class="bs">'+(t.score==null?'':t.score)+'</span></div>'; }
     var ld=[g.a,g.h].filter(function(x){return x.lead}).map(function(x){return esc(ab(x.id))+' <b>'+esc(x.lead.n)+' '+esc(x.lead.v)+'</b>'}).join(' &middot; ');
     return '<div class="'+cls+'" data-pk="'+g.id+'">'+(rib?'<span class="ribbon">'+rib+'</span>':'')+
-      '<div class="bt">'+chip+'<span class="bst live">'+esc(statusTxt(g))+'</span></div>'+br('a')+br('h')+
+      '<div class="bt">'+chip+'<span class="bst'+(isLive(g)?' live':'')+'">'+esc(statusTxt(g))+'</span></div>'+br('a')+br('h')+
       '<div class="bf">'+(ld?'<span class="bld">'+ld+'</span>':'')+(g.tv?'<span style="margin-left:auto">'+esc(g.tv)+'</span>':'')+'</div>'+
       (g.last?'<div class="blp">'+esc(g.last)+'</div>':'')+'</div>';
   }).join('');
@@ -1850,7 +1858,8 @@ function snSea(y){ return (y-1)+'-'+String(y).slice(2); }
 function snHs(id,cls){ return '<img'+(cls?' class="'+cls+'"':'')+' src="'+shot(id)+'" data-hide="1" alt="" loading="lazy">'; }
 function snRec(id){ var st=snStatPrev()?S.sn.pst:S.st; return (st&&st[id])||{id:id,w:0,l:0,pf:0,pa:0,home:'',road:'',l10:'',strk:''}; }
 function snPct(r){ return r.w+r.l?r.w/(r.w+r.l):0; }
-function snOrder(ids){ return ids.slice().sort(function(x,y){ var a=snRec(x), b=snRec(y); return (snPct(b)-snPct(a))||(b.w-a.w)||(ab(x)<ab(y)?-1:1); }); }
+/* v18: the current season ranks teams as the rest of the page does (order), so the Mavs' seed matches the bar */
+function snOrder(ids){ if(!snStatPrev()) return order(ids); return ids.slice().sort(function(x,y){ var a=snRec(x), b=snRec(y); return (snPct(b)-snPct(a))||(b.w-a.w)||(ab(x)<ab(y)?-1:1); }); }
 function snGB(a,b){ var A=snRec(a), B=snRec(b); return ((A.w-B.w)+(B.l-A.l))/2; }
 
 /* compact games: {id,date,ty,h,a,hs,as,st,ot,venue} */
@@ -2004,7 +2013,7 @@ function snPulse(){
   }
   cells.push([r.w+'-'+r.l,'Record'+tag,(r.w+r.l)+' played',prev&&!snPrevView()?'':'hero','','log:all']);
   cells.push([pctTxt(r.w,r.l),'Win %'+tag,'','','gr','lg:pct']);
-  if(!prev&&r.w+r.l) cells.push([Math.round(snPct(r)*GAMES)+'-'+(GAMES-Math.round(snPct(r)*GAMES)),'Pace','over '+GAMES+' games','','','chart']);
+  if(!prev&&r.w+r.l>=10) cells.push([Math.round(snPct(r)*GAMES)+'-'+(GAMES-Math.round(snPct(r)*GAMES)),'Pace','over '+GAMES+' games','','','chart']);
   cells.push([ord(seed),'In the West'+tag,seed<=6?'playoff spot':seed<=10?'play-in':'outside the top 10','','','#stand']);
   cells.push([seed>1?snGbTxt(snGB(cr[0],FAV)):'-','GB of 1st','','','','#stand']);
   cells.push([ord(dv.indexOf(FAV)+1),divOf(FAV)+tag,'','','','#stand']);
@@ -2060,6 +2069,7 @@ function snNext(){
 function snLast(){
   var gs=snFav(); if(!gs){ $('snLast').innerHTML=''; return; }
   var done=gs.filter(function(x){ return x.st===2; });
+  if(done.some(function(x){ return x.ty===2; })) done=done.filter(function(x){ return x.ty===2; });   /* v18: preseason drops out once a regular season game is final */
   if(!done.length){ $('snLast').innerHTML=''; return; }
   var l=done[done.length-1], op=snOpp(l,FAV), r=snRes(l,FAV);
   var body='<div class="lr" data-pk="'+l.id+'"><span class="sc '+r+'">'+r+' '+snScore(l,FAV)+'</span>'+imgT(op)+'<div class="m"><b>'+(l.h===FAV?'vs ':'at ')+esc(nick(op))+'</b><br>'+esc(fmtDay(l.date))+(l.ot?' &middot; overtime':'')+' &middot; breakdown &rsaquo;</div></div>'+
@@ -2440,7 +2450,10 @@ function renderAll(){
   if(v==='game'&&S.gc)gcRender();
   if(S.tm)tmRender();
 }
-function fail(e){ $('err').innerHTML='<div class="err">Could not reach ESPN just now ('+esc(e&&e.message||e)+'). Retrying.</div>'; }
+/* v18: the banner names the feed and the status, not the whole address */
+function errTxt(e){ var m=String(e&&e.message||e||''), c=(m.match(/^([0-9]{3}) /)||[])[1], u=['scoreboard','summary','standings','schedule','byteam','statistics','gamelog','roster'].filter(function(k){ return m.indexOf('/'+k)>=0; })[0];
+  return (u?({scoreboard:'scores',summary:'game feed',standings:'standings',schedule:'schedule',byteam:'team stats',statistics:'stats',gamelog:'game log',roster:'roster'})[u]:'feed')+(c?', error '+c:', no answer'); }
+function fail(e){ $('err').innerHTML='<div class="err">Could not reach ESPN just now ('+esc(errTxt(e))+'). Retrying.</div>'; }
 function ok(){ $('err').innerHTML=''; }
 function reSim(){
   var key=JSON.stringify(Object.keys(S.st).map(function(k){return S.st[k].w+'-'+S.st[k].l}))+Object.keys(S.sched).length;
@@ -2577,7 +2590,7 @@ function hmHero(){
 function hmSide(title,body,extra){ return '<div class="tb hmside"><div class="tbh"><h3>'+title+'</h3><span>'+(extra||'')+'</span></div><div class="hmsb">'+body+'</div></div>'; }
 function hmTonight(){
   var gs=(S.days[0]||[]).slice();
-  if(!gs.length) return hmSide('Around the league','<div class="empty">Nothing on tonight.</div>');
+  if(!gs.length) return hmSide('Around the league','<div class="empty">'+(S.dayErr?'Scores are not coming through from ESPN just now. Retrying.':'No NBA games today.')+'</div>');
   var rank={'in':0,'pre':1,'post':2};
   gs.sort(function(x,y){ return (rank[x.state]-rank[y.state])||(new Date(x.date)-new Date(y.date)); });
   var show=gs.slice(0,10);
@@ -2708,7 +2721,7 @@ function seg(name,cur,opts){ return '<span class="gtab">'+opts.map(function(o){r
 
 function gcRender(){
   var gc=S.gc; if(!gc)return; var el=$('gc');
-  if(!gc.g){ el.innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; Back</button><h2>Game Center</h2></div><div class="'+(gc.err?'err':'empty')+'">'+(gc.err?'Could not load this game ('+esc(gc.err.message)+'). Retrying.':'Loading the game')+'</div>'; return; }
+  if(!gc.g){ el.innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; Back</button><h2>Game Center</h2></div><div class="'+(gc.err?'err':'empty')+'">'+(gc.err?'Could not load this game ('+esc(errTxt(gc.err))+'). Retrying.':'Loading the game')+'</div>'; return; }
   var keep={}; [].forEach.call(el.querySelectorAll('[data-keep]'),function(n){keep[n.dataset.keep]=n.scrollTop});
   var g=gc.g, C=pairCols(g);
   var h=gcHeader(g,C);
