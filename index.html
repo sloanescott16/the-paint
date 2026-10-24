@@ -2688,7 +2688,7 @@ function boot(){
 function openGame(id){
   if(S.gc)clearTimeout(S.gc.timer);
   S.gc={id:id, js:null, g:null, box:null, shT:'both', shQ:0, hl:null, open:{}, timer:null, err:null};
-  $('gc').innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; Back</button><h2>Game Center</h2></div><div class="empty">Loading the game</div>';
+  $('gc').innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; '+gvBackLbl()+'</button><h2>Game Center</h2></div><div class="empty">Loading the game</div>';
   gcLoad();
 }
 function gcBack(){ var b=S.back&&!/^#game/.test(S.back)?S.back:'#live'; location.hash=b; }   // v8: a game opened from outside backs out to the scoreboard
@@ -2724,7 +2724,7 @@ function seg(name,cur,opts){ return '<span class="gtab">'+opts.map(function(o){r
 
 function gcRender(){
   var gc=S.gc; if(!gc)return; var el=$('gc');
-  if(!gc.g){ el.innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; Back</button><h2>Game Center</h2></div><div class="'+(gc.err?'err':'empty')+'">'+(gc.err?'Could not load this game ('+esc(errTxt(gc.err))+'). Retrying.':'Loading the game')+'</div>'; return; }
+  if(!gc.g){ el.innerHTML='<div class="gchd"><button class="gc-back" data-gc="back">&larr; '+gvBackLbl()+'</button><h2>Game Center</h2></div><div class="'+(gc.err?'err':'empty')+'">'+(gc.err?'Could not load this game ('+esc(errTxt(gc.err))+'). Retrying.':'Loading the game')+'</div>'; return; }
   var keep={}; [].forEach.call(el.querySelectorAll('[data-keep]'),function(n){keep[n.dataset.keep]=n.scrollTop});
   var g=gc.g, C=pairCols(g);
   var h=gvRender();   /* v19: the broadcast layout */
@@ -3103,7 +3103,7 @@ function preTape(g){
 function gvComp(g,k){ var c=(((S.gc.js||{}).header||{}).competitions||[])[0]||{}; return (c.competitors||[]).filter(function(x){return String((x.team||{}).id)===g[k].id})[0]||{}; }
 function gvTV(){ var c=(((S.gc.js||{}).header||{}).competitions||[])[0]||{}, L=c.broadcasts||[], nat='', tv='';
   L.forEach(function(b){ var n=(b.media||{}).shortName||(b.names||[])[0]||''; if(!n)return; var isTV=!b.type||/tv/i.test(b.type.shortName||'');
-    if(b.isNational&&isTV&&!nat)nat=n; if(isTV&&!tv)tv=n; });
+    if(b.isNational&&!nat)nat=n; if(isTV&&!tv)tv=n; });
   return nat||tv; }
 function gvCard(title,body,cls,extra){ return '<div class="gv-card '+(cls||'')+'"><div class="gv-h"><h3>'+title+'</h3>'+(extra||'')+'</div>'+body+'</div>'; }
 function gvScorebug(g,C){
@@ -3288,7 +3288,7 @@ function gvShots(g,C){
 function gvRender(){
   var gc=S.gc, el=$('gc'), g=gc.g, C=pairCols(g), why=chipFor(g);
   var title=g.state==='pre'?'Preview':isLive(g)?'Game Center':'Game Breakdown';
-  var back={'#home':'Home','#season':'Season','#race':'Race','#sched':'Schedule','#stand':'Standings'}[(S.back||'').replace(/\?.*$/,'')]||'Scoreboard';
+  var back=gvBackLbl();
   var tv=gvTV()||g.tv||'', meta=[fmtDay(g.date)+(g.state==='pre'?', '+fmtTime(g.date):''),g.venue,tv].filter(Boolean).map(esc).join(' &middot; ');
   var h='<div class="gchd gv-hd"><button class="gc-back" data-gc="back">&larr; '+back+'</button><h2>'+title+'</h2>'+
     (why?'<span class="gc-why '+(why[0]==='race'||why[0]==='pre'?'split':why[0])+'">'+esc(why[1])+'</span>':'')+
@@ -3304,13 +3304,14 @@ function gvRender(){
     var body=tab==='pbp'?gvPBP(g,C):tab==='stats'?gvStats(g,C):tab==='shots'?gvShots(g,C):gvBox(g,C);
     var tabs='<div class="gv-tabs" role="tablist">'+T.map(function(t){return '<button role="tab" data-gc="tab" data-v="'+t[0]+'" class="'+(t[0]===tab?'on':'')+'">'+t[1]+'</button>'}).join('')+'</div>';
     h+='<div class="gv"><div class="gv-main"><div class="r4 gv-tabbed">'+tabs+'<div class="gv-pane">'+body+'</div></div><div class="r8">'+gcInj(g)+'</div></div>'+
-      '<div class="gv-rail">'+(isLive(g)?'<div class="r2">'+gvFloor(g,C)+'</div>':'')+'<div class="r5">'+gvChart(g,C)+'</div><div class="r2">'+gvLeaders(g,C,'Game leaders')+'</div><div class="r3">'+gvLast(g,C)+'</div><div class="r5">'+gvLines(g,C)+'</div>'+(isFinal(g)?'<div class="r8">'+gvNews(g)+'</div>':'')+'</div></div>'+gvFoot(g);
+      '<div class="gv-rail">'+(isLive(g)?'<div class="r3">'+gvFloor(g,C)+'</div>':'')+'<div class="r5">'+gvChart(g,C)+'</div><div class="r2">'+gvLeaders(g,C,'Game leaders')+'</div><div class="r3">'+gvLast(g,C)+'</div><div class="r5">'+gvLines(g,C)+'</div>'+(isFinal(g)?'<div class="r8">'+gvNews(g)+'</div>':'')+'</div></div>'+gvFoot(g);
   }
   return h;
 }
 
 /* ---------- v19: in line with Command Center, Pennant Chase and The Crease ---------- */
 /* freshness: "updated 12s ago" ticks every second without a re-render; it turns amber when the feed goes quiet */
+function gvBackLbl(){ return {'#home':'Home','#season':'Season','#race':'Race','#sched':'Schedule','#stand':'Standings'}[(S.back||'').replace(/\?.*$/,'')]||'Scoreboard'; }   /* v19: the back button names where it goes */
 function gvAgeHTML(){ var gc=S.gc, g=gc&&gc.g; if(!gc||!gc.at)return '';
   return (isLive(g)?'<i class="dot"></i>Live, ':'')+'updated <span id="gcAge">'+gvAgeTxt()+'</span>'; }
 function gvAgeTxt(){ var s=Math.max(0,Math.round((Date.now()-(S.gc&&S.gc.at||Date.now()))/1000)); return s<5?'just now':s<60?s+'s ago':Math.floor(s/60)+'m ago'; }
@@ -3319,15 +3320,14 @@ setInterval(function(){ var a=document.getElementById('gcAge'); if(!a||!S.gc||!S
 /* Watch button, copied from Command Center (v90, v91, v110) by way of Pennant Chase (v75) and pointed at the NBA.
    From 30 minutes before tip-off until the final, the game carries a Watch link that opens it on the service showing it,
    in a new tab. ESPN and ABC games go to the game's own stream when ESPN's public watch listings show it, otherwise the
-   ESPN channel; NBC and Peacock to Peacock; Prime Video to Prime's NBA page; TNT and TBS to HBO Max. A Mavericks game on
-   local TV goes to MavsTV (the team's own stream). Other regional games keep the plain TV label, as Command Center does. */
+   ESPN channel; NBC and Peacock to Peacock; Prime Video to Prime's NBA page; TNT and TBS to HBO Max. Mavericks games go to
+   NBA.com (below). Other regional games keep the plain TV label, as Command Center does. */
 var W={map:{},at:0,busy:false};
 var ESPN_FAM=/^(ESPN|ESPN2|ESPNU|ESPNEWS|ESPN\+|ESPN Unlimited|ESPN Deportes|ABC)$/i;
 var WATCH_NETS=[
   [/^(NBC|Peacock|NBCSN)$/i,'Peacock','https://www.peacocktv.com/watch/search'],   /* its search page leads with today's live games */
-  [/^(Prime Video|Amazon Prime|Prime)$/i,'Prime','https://www.amazon.com/nba'],
-  [/^(TNT|TBS|truTV|TNT Sports|HBO Max|Max)$/i,'TNT',function(g){ return 'https://play.hbomax.com/search?q='+encodeURIComponent(nick(g.home===FAV||g.away===FAV?FAV:g.home)); }],
-  [/^(MavsTV|KFAA|KFAA-TV|Mavs TV)$/i,'MavsTV','https://www.nba.com/mavs/stream']
+  [/^(Prime Video|Amazon Prime|Prime)$/i,'Prime','https://www.amazon.com/salp/nba'],
+  [/^(TNT|TBS|truTV|TNT Sports|HBO Max|Max)$/i,'TNT',function(g){ return 'https://play.hbomax.com/search?q='+encodeURIComponent(nick(g.home===FAV||g.away===FAV?FAV:g.home)); }]
 ];
 function watchable(g){ return !!g&&(g.live||(g.state==='pre'&&g.date-Date.now()<=30*60e3&&Date.now()-g.date<4*36e5)); }
 /* the TV and streaming names on the summary header: national first, then the Mavericks' own feeds */
@@ -3336,14 +3336,13 @@ function gvNets(g){ var c=(((S.gc.js||{}).header||{}).competitions||[])[0]||{}, 
     var n=String((b.media||{}).shortName||(b.names||[])[0]||'').trim(); if(!n||seen[n])return;
     if(!b.isNational&&!fav)return; seen[n]=1; out.push(n); });
   return out; }
-/* v19: the Captain has the Mavericks team pass on NBA.com, so every Mavericks game goes to the Mavs stream on NBA.com,
-   unless a national exclusive (ESPN, ABC, TNT, NBC/Peacock, Prime) carries it, since NBA.com blacks those out. The game's
-   own NBA.com page (nba.com/game/dal-vs-ind-0022600095) needs NBA's game number, which the ESPN feed does not carry and
-   NBA's own feeds refuse to other sites, so the team stream page is the reliable link. Local blackout rules may still apply. */
+/* v19: Mavs games link to NBA.com, unless a national exclusive (ESPN, ABC, TNT, NBC/Peacock, Prime) carries them.
+   The link is NBA.com's games page for the game's date (US Eastern), where each game has its own Watch. A game's own page
+   needs NBA's game number, which the ESPN feed does not carry. */
 var NAT_EXCL=/^(ESPN|ESPN2|ABC|TNT|TBS|truTV|TNT Sports|NBC|Peacock|Prime Video|Amazon Prime|Prime)$/i;
 function watchLink(g){
   var nets=g.nets||[], fam=null, i, k;
-  if((g.home===FAV||g.away===FAV)&&!nets.some(function(n){return NAT_EXCL.test(n)})) return {net:'NBA.com',label:'on NBA.com',url:'https://www.nba.com/mavs/stream'};
+  if((g.home===FAV||g.away===FAV)&&!nets.some(function(n){return NAT_EXCL.test(n)})) return {net:'NBA.com',label:'on NBA.com',url:'https://www.nba.com/games?date='+new Date(g.date).toLocaleDateString('en-CA',{timeZone:'America/New_York'})};
   for(i=0;i<nets.length&&!fam;i++) if(ESPN_FAM.test(nets[i])) fam=nets[i];
   if(fam){
     var air=W.map[g.id];
