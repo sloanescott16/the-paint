@@ -2696,7 +2696,7 @@ function gcLoad(){
   var gc=S.gc; if(!gc)return; var id=gc.id;
   if(document.hidden&&gc.js){ gc.timer=setTimeout(gcLoad,5000); return; }
   j(API+'/summary?event='+id).then(function(js){
-    if(S.gc!==gc)return; gc.js=js; gc.err=null; gc.g=gcGame(js);
+    if(S.gc!==gc)return; gc.js=js; gc.err=null; gc.at=Date.now(); gc.g=gcGame(js);   /* v19: load time for the "updated" stamp */
     if(gc.g&&!gc.box)gc.box=hasT(gc.g,FAV)?(gc.g.h.id===FAV?'h':'a'):'a';
     if(gc.g)[gc.g.h.id,gc.g.a.id].forEach(function(t){ if(!schedOf(t))loadSched(t).then(function(){ if(S.gc===gc)gcRender(); }).catch(function(){}); });
     gcRender();
@@ -3288,24 +3288,144 @@ function gvShots(g,C){
 function gvRender(){
   var gc=S.gc, el=$('gc'), g=gc.g, C=pairCols(g), why=chipFor(g);
   var title=g.state==='pre'?'Preview':isLive(g)?'Game Center':'Game Breakdown';
-  var h='<div class="gchd"><button class="gc-back" data-gc="back">&larr; Back</button><h2>'+title+'</h2>'+
+  var back={'#home':'Home','#season':'Season','#race':'Race','#sched':'Schedule','#stand':'Standings'}[(S.back||'').replace(/\?.*$/,'')]||'Scoreboard';
+  var tv=gvTV()||g.tv||'', meta=[fmtDay(g.date)+(g.state==='pre'?', '+fmtTime(g.date):''),g.venue,tv].filter(Boolean).map(esc).join(' &middot; ');
+  var h='<div class="gchd gv-hd"><button class="gc-back" data-gc="back">&larr; '+back+'</button><h2>'+title+'</h2>'+
     (why?'<span class="gc-why '+(why[0]==='race'||why[0]==='pre'?'split':why[0])+'">'+esc(why[1])+'</span>':'')+
-    (g.note?'<span class="gc-why split">'+esc(g.note)+'</span>':'')+
-    '<span class="note">'+(isLive(g)?'<i class="dot"></i>updates every 5 seconds':esc(fmtDay(g.date)))+'</span></div>';
+    (g.note?'<span class="gc-why split">'+esc(g.note)+'</span>':'')+'<span class="gv-meta">'+meta+'</span>'+
+    '<span class="note">'+gvAgeHTML()+'</span><span id="gcWatch">'+gvWatchHTML(g)+'</span></div>';   /* v19: header in the sister sites' pattern */
   if(gc.err)h+='<div class="err gv-stale">The game feed is not answering ('+esc(errTxt(gc.err))+'). Showing the last update, retrying.</div>';
   h+=gvScorebug(g,C);
   if(g.state==='pre'){
-    h+='<div class="gv"><div class="gv-main gv-pre"><div class="r4">'+preTape(g)+'</div><div class="r5">'+preStake(g)+'</div><div class="r6">'+preSeries(g)+'</div></div>'+
-      '<div class="gv-rail"><div class="r1">'+preWin(g,C)+'</div><div class="r2">'+gvLeaders(g,C,'Players to watch')+'</div><div class="r3">'+preForm(g)+'</div><div class="r7">'+preInfo(g)+'</div><div class="r8">'+gcInj(g)+'</div></div></div>';
+    h+='<div class="gv"><div class="gv-main gv-pre"><div class="r4">'+preTape(g)+'</div><div class="r5">'+preStake(g)+'</div><div class="r6">'+preSeries(g)+'</div><div class="r6 gv-pair"><div>'+gvLines(g,C)+'</div><div>'+gvStand(g,C)+'</div></div><div class="r6">'+gvNews(g)+'</div></div>'+
+      '<div class="gv-rail"><div class="r1">'+preWin(g,C)+'</div><div class="r2">'+gvLeaders(g,C,'Players to watch')+'</div><div class="r3">'+preForm(g)+'</div><div class="r7">'+preInfo(g)+'</div><div class="r8">'+gcInj(g)+'</div></div></div>'+gvFoot(g);   /* v19: preview cards balanced across both columns */
   } else {
     var tab=gc.tab||'box', T=[['box','Box score'],['pbp','Play by play'],['stats','Team stats'],['shots','Shot chart']];
     var body=tab==='pbp'?gvPBP(g,C):tab==='stats'?gvStats(g,C):tab==='shots'?gvShots(g,C):gvBox(g,C);
     var tabs='<div class="gv-tabs" role="tablist">'+T.map(function(t){return '<button role="tab" data-gc="tab" data-v="'+t[0]+'" class="'+(t[0]===tab?'on':'')+'">'+t[1]+'</button>'}).join('')+'</div>';
     h+='<div class="gv"><div class="gv-main"><div class="r4 gv-tabbed">'+tabs+'<div class="gv-pane">'+body+'</div></div><div class="r8">'+gcInj(g)+'</div></div>'+
-      '<div class="gv-rail"><div class="r5">'+gvChart(g,C)+'</div><div class="r2">'+gvLeaders(g,C,'Game leaders')+'</div><div class="r3">'+gvLast(g,C)+'</div></div></div>';
+      '<div class="gv-rail">'+(isLive(g)?'<div class="r2">'+gvFloor(g,C)+'</div>':'')+'<div class="r5">'+gvChart(g,C)+'</div><div class="r2">'+gvLeaders(g,C,'Game leaders')+'</div><div class="r3">'+gvLast(g,C)+'</div><div class="r5">'+gvLines(g,C)+'</div>'+(isFinal(g)?'<div class="r8">'+gvNews(g)+'</div>':'')+'</div></div>'+gvFoot(g);
   }
   return h;
 }
+
+/* ---------- v19: in line with Command Center, Pennant Chase and The Crease ---------- */
+/* freshness: "updated 12s ago" ticks every second without a re-render; it turns amber when the feed goes quiet */
+function gvAgeHTML(){ var gc=S.gc, g=gc&&gc.g; if(!gc||!gc.at)return '';
+  return (isLive(g)?'<i class="dot"></i>Live, ':'')+'updated <span id="gcAge">'+gvAgeTxt()+'</span>'; }
+function gvAgeTxt(){ var s=Math.max(0,Math.round((Date.now()-(S.gc&&S.gc.at||Date.now()))/1000)); return s<5?'just now':s<60?s+'s ago':Math.floor(s/60)+'m ago'; }
+setInterval(function(){ var a=document.getElementById('gcAge'); if(!a||!S.gc||!S.gc.at)return; a.textContent=gvAgeTxt();
+  var g=S.gc.g, quiet=isLive(g)&&Date.now()-S.gc.at>20000; a.parentNode.classList.toggle('quiet',quiet); },1000);
+/* Watch button, copied from Command Center (v90, v91, v110) by way of Pennant Chase (v75) and pointed at the NBA.
+   From 30 minutes before tip-off until the final, the game carries a Watch link that opens it on the service showing it,
+   in a new tab. ESPN and ABC games go to the game's own stream when ESPN's public watch listings show it, otherwise the
+   ESPN channel; NBC and Peacock to Peacock; Prime Video to Prime's NBA page; TNT and TBS to HBO Max. A Mavericks game on
+   local TV goes to MavsTV (the team's own stream). Other regional games keep the plain TV label, as Command Center does. */
+var W={map:{},at:0,busy:false};
+var ESPN_FAM=/^(ESPN|ESPN2|ESPNU|ESPNEWS|ESPN\+|ESPN Unlimited|ESPN Deportes|ABC)$/i;
+var WATCH_NETS=[
+  [/^(NBC|Peacock|NBCSN)$/i,'Peacock','https://www.peacocktv.com/watch/search'],   /* its search page leads with today's live games */
+  [/^(Prime Video|Amazon Prime|Prime)$/i,'Prime','https://www.amazon.com/nba'],
+  [/^(TNT|TBS|truTV|TNT Sports|HBO Max|Max)$/i,'TNT',function(g){ return 'https://play.hbomax.com/search?q='+encodeURIComponent(nick(g.home===FAV||g.away===FAV?FAV:g.home)); }],
+  [/^(MavsTV|KFAA|KFAA-TV|Mavs TV)$/i,'MavsTV','https://www.nba.com/mavs/stream']
+];
+function watchable(g){ return !!g&&(g.live||(g.state==='pre'&&g.date-Date.now()<=30*60e3&&Date.now()-g.date<4*36e5)); }
+/* the TV and streaming names on the summary header: national first, then the Mavericks' own feeds */
+function gvNets(g){ var c=(((S.gc.js||{}).header||{}).competitions||[])[0]||{}, out=[], seen={}, fav=g.h.id===FAV||g.a.id===FAV;
+  (c.broadcasts||[]).slice().sort(function(x,y){ return (y.isNational?1:0)-(x.isNational?1:0); }).forEach(function(b){
+    var n=String((b.media||{}).shortName||(b.names||[])[0]||'').trim(); if(!n||seen[n])return;
+    if(!b.isNational&&!(fav&&/MavsTV|KFAA/i.test(n)))return; seen[n]=1; out.push(n); });
+  return out; }
+function watchLink(g){
+  var nets=g.nets||[], fam=null, i, k;
+  for(i=0;i<nets.length&&!fam;i++) if(ESPN_FAM.test(nets[i])) fam=nets[i];
+  if(fam){
+    var air=W.map[g.id];
+    if(air) return {net:fam,url:'https://www.espn.com/watch/player/_/id/'+air};
+    if(/^ESPN2?$/i.test(fam)) return {net:fam,url:'https://www.espn.com/watch/player/_/channel/'+fam.toLowerCase()};
+    return {net:fam,url:'https://www.espn.com/nba/game/_/gameId/'+g.id};
+  }
+  for(i=0;i<nets.length;i++) for(k=0;k<WATCH_NETS.length;k++) if(WATCH_NETS[k][0].test(nets[i])){
+    var u=WATCH_NETS[k][2]; return {net:WATCH_NETS[k][1],url:typeof u==='function'?u(g):u};
+  }
+  return null;
+}
+function watchHTML(g,kind){
+  if(!watchable(g)) return '';
+  var w=watchLink(g); if(!w) return '';
+  return '<a class="watch'+(kind?' '+kind:'')+'" href="'+esc(w.url)+'" target="_blank" rel="noopener" title="Watch on '+esc(w.net)+' (new tab)"><i></i>Watch<span>'+esc(w.net)+'</span></a>';
+}
+function gvWatchHTML(g){
+  var wg={id:g.id, live:isLive(g), state:g.state, date:+new Date(g.date), home:g.h.id, away:g.a.id, nets:gvNets(g)};
+  if(watchable(wg)&&wg.nets.some(function(n){return ESPN_FAM.test(n)}))watchTick();
+  return watchHTML(wg,'gcw');
+}
+/* ESPN family games: the game's own airing in ESPN's public watch listings, by ESPN event id (the NBA feed is ESPN's) */
+function watchTick(){
+  if(W.busy||Date.now()-W.at<120e3) return;
+  W.busy=true; W.at=Date.now();
+  fetch('https://watch.product.api.espn.com/api/product/v3/watchespn/web/home?lang=en&features=pbov7&countryCode=US&entitlements=ESPN_PLUS&tz=America%2FChicago')
+    .then(function(r){ return r.ok?r.json():null; }).then(function(d){
+      var map={};
+      (function walk(o){
+        if(!o||typeof o!=='object') return;
+        if(o.eventId&&Array.isArray(o.streams)&&o.streams.length){
+          var st=o.streams.filter(function(x){ return x.status==='live'; })[0]||o.streams.filter(function(x){ return x.tier==='primary'; })[0]||o.streams[0];
+          if(st&&st.id&&!map[o.eventId]) map[String(o.eventId)]=st.id;
+        }
+        for(var k in o) walk(o[k]);
+      })(d);
+      for(var k in map) W.map[k]=map[k];
+    }).catch(function(){ /* keep the fallback links */ }).then(function(){ W.busy=false; });
+}
+/* a Watch link sits inside clickable cards: let the link open, but nothing else */
+document.addEventListener('click',function(e){ if(e.target.closest&&e.target.closest('a.watch')) e.stopImmediatePropagation(); },true);
+document.addEventListener('keydown',function(e){ if(e.key==='Enter'&&e.target.closest&&e.target.closest('a.watch')) e.stopImmediatePropagation(); },true);
+/* Lines card, from Command Center: spread, moneyline and total; on a final, how they landed */
+function gvLines(g,C){
+  var p=((S.gc.js||{}).pickcenter||[])[0]; if(!p||(!p.details&&p.overUnder==null))return '';
+  function ml(v){ return v==null?'':(v>0?'+':'')+v; }
+  var ao=p.awayTeamOdds||{}, ho=p.homeTeamOdds||{}, fk=ho.favorite?'h':ao.favorite?'a':null;
+  var cells=[];
+  if(p.details)cells.push(['Spread',esc(p.details),'']);
+  if(ao.moneyLine!=null&&ho.moneyLine!=null){ var k=fk||'h', o=k==='h'?'a':'h', mo=k==='h'?ho:ao, mu=k==='h'?ao:ho; cells.push(['Moneyline',esc(ab(g[k].id))+' '+ml(mo.moneyLine),esc(ab(g[o].id))+' '+ml(mu.moneyLine)]); }
+  if(p.overUnder!=null)cells.push(['Over / under',esc(p.overUnder),'']);
+  if(isFinal(g)&&g.a.score!=null&&g.h.score!=null){
+    var m=/^([A-Z]{2,4})\s+(-?\d+(\.\d+)?)$/.exec(p.details||'');
+    if(m){ var sk=ab(g.h.id)===m[1]?'h':ab(g.a.id)===m[1]?'a':null; if(sk){ var mg=g[sk].score-g[sk==='h'?'a':'h'].score+(+m[2]);
+      cells[0][2]=mg>0?'<span class="up">'+esc(ab(g[sk].id))+' covered</span>':mg<0?'<span class="dn">'+esc(ab(g[sk==='h'?'a':'h'].id))+' covered</span>':'Push'; } }
+    var t=g.a.score+g.h.score, ou=cells.filter(function(c){return c[0]==='Over / under'})[0];
+    if(ou)ou[2]=t>p.overUnder?'<span class="up">Over, '+t+'</span>':t<p.overUnder?'<span class="dn">Under, '+t+'</span>':'Push, '+t;
+    var mlc=cells.filter(function(c){return c[0]==='Moneyline'})[0]; if(mlc)mlc[2]=esc(nick(g.h.win?g.h.id:g.a.id))+' won';
+  }
+  return gvCard('Lines','<div class="gv-lines">'+cells.map(function(c){return '<div><span>'+c[0]+'</span><b>'+c[1]+'</b><small>'+c[2]+'</small></div>'}).join('')+'</div>','',
+    '<span class="gv-hint">'+esc((p.provider||{}).name||'')+(isFinal(g)?', how they landed':'')+'</span>');
+}
+/* On the floor: the ten players on the court while live, the basketball answer to Pennant Chase's At the plate */
+function gvFloor(g,C){
+  var out=['a','h'].map(function(k){ var st=gvBoxTeam(g,k); if(!st)return ''; var ix=gvIx(st);
+    var on=(st.athletes||[]).filter(function(a){return a.active&&a.stats&&a.stats.length});
+    if(!on.length)return '';
+    return '<div class="fl-t" style="--tc:'+C[k]+'"><h4>'+imgT(g[k].id)+esc(nick(g[k].id))+'</h4>'+on.map(function(a){ var at=a.athlete||{}, s=a.stats;
+      return '<div class="fl-p"'+(at.id?' data-plid="'+esc(at.id)+'" data-pname="'+esc(at.displayName||'')+'"':'')+'><b>'+esc(at.shortName||at.displayName||'')+'</b><i>'+esc((at.position||{}).abbreviation||'')+'</i><span>'+esc(s[ix.PTS]||0)+' pts &middot; '+esc(s[ix.REB]||0)+' reb &middot; '+esc(s[ix.AST]||0)+' ast</span><em class="'+(+s[ix.PF]>=5?'pf5':+s[ix.PF]>=4?'pf4':'')+'">'+esc(s[ix.PF]||0)+' PF</em></div>'; }).join('')+'</div>'; }).join('');
+  if(!out)return '';
+  return gvCard('On the floor','<div class="gv-floor">'+out+'</div>','','<span class="gv-hint">fouls in amber at 4, red at 5</span>');
+}
+/* Standings (division) and Headlines, from Command Center's preview */
+function gvStand(g,C){
+  var G=(((S.gc.js||{}).standings||{}).groups)||[]; if(!G.length)return '';
+  var body=G.map(function(gr){ var E=((gr.standings||{}).entries)||[]; if(!E.length)return '';
+    return '<h4>'+esc(String(gr.header||'').replace(/^\d{4}-\d{2}\s+/,'').replace(/\s+Standings$/,''))+'</h4><table class="gv-st"><tbody>'+E.map(function(e){ var st={}; (e.stats||[]).forEach(function(x){st[x.name]=x.displayValue});
+      var me=String(e.id)===g.a.id||String(e.id)===g.h.id;
+      return '<tr class="'+(me?'me':'')+(String(e.id)===FAV?' fav':'')+'"><td>'+imgT(String(e.id))+esc(e.team||'')+'</td><td>'+esc((st.wins||0)+'-'+(st.losses||0))+'</td><td>'+esc(st.gamesBehind||'')+'</td><td>'+esc(st.streak||'')+'</td></tr>'; }).join('')+'</tbody></table>'; }).join('');
+  return gvCard('Standings',body,'','<span class="gv-hint">W-L, GB, streak</span>');
+}
+function gvNews(g){
+  var A=(((S.gc.js||{}).news||{}).articles)||[]; if(!A.length)return '';
+  return gvCard(isFinal(g)?'Recap and headlines':'Headlines','<div class="gv-news">'+A.slice(0,4).map(function(a){ var u=((a.links||{}).web||{}).href||'';
+    return '<a'+(u?' href="'+esc(u.replace(/^http:/,'https:'))+'" target="_blank" rel="noopener"':'')+'><b>'+esc(a.headline||'')+'</b>'+(a.description?'<span>'+esc(a.description)+'</span>':'')+'</a>'; }).join('')+'</div>');
+}
+function gvFoot(g){ return '<div class="gv-foot">Tap a team or a player for their card. '+(isLive(g)?'Refreshes every 5 seconds while the game is on.':g.state==='pre'?'Refreshes every minute until tip-off.':'Final. Refreshes every few minutes for late stat corrections.')+'</div>'; }
 
 /* game center controls */
 document.addEventListener('click',function(e){
@@ -3674,6 +3794,60 @@ svg.gv-ch .now{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 
 .lp2 .ck{font-size:10.5px; color:var(--dim)}
 .lp2.sc{color:var(--ink); background:color-mix(in srgb,var(--tc) 9%,transparent)} .lp2.sc .tx{font-weight:600}
 .lp2 .ps2{font-family:var(--display); font-size:15px; padding-right:8px}
+/* ---------- v19: header, scorebug and new cards in the sister sites' visual language ---------- */
+.gv-hd{row-gap:6px}
+.gv-hd .gv-meta{font-family:var(--display); font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute)}
+.gv-hd .note{display:flex; align-items:center; gap:4px}
+.gv-hd .note.quiet,.gv-hd .note:has(.quiet){color:var(--warn)}
+#gcAge.quiet{color:var(--warn)}
+#gcWatch{display:flex}
+#gcWatch:empty{display:none}
+a.watch{flex:none; display:inline-flex; align-items:center; gap:.45em; padding:.28em .7em .28em .6em; border-radius:999px; background:#1f6feb; color:#fff;
+  text-decoration:none; font-family:var(--display); font-weight:800; font-size:1em; line-height:1; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; box-shadow:0 0 0 1px rgba(255,255,255,.14)}
+a.watch i{flex:none; width:0; height:0; border-style:solid; border-width:.38em 0 .38em .6em; border-color:transparent transparent transparent #fff}
+a.watch span{font-weight:600; opacity:.85}
+a.watch:hover,a.watch:focus-visible{filter:brightness(1.15); box-shadow:0 0 0 2px #fff}
+#gcWatch a.watch{font-size:14px; padding:7px 14px}
+/* scores sit in dark boxes beside each team, and a team-colour bar runs along the foot, as Command Center and Pennant Chase draw it */
+.sb-s{background:rgba(0,0,0,.42); border-radius:8px; padding:8px 14px 6px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.sb::after{content:''; position:absolute; left:0; right:0; bottom:0; height:4px; background:linear-gradient(90deg,var(--ca) 0 50%,var(--ch) 50% 100%)}
+.sb-t::before{display:none}
+#gc .sb.stuck .sb-s{padding:3px 9px 2px}
+/* new cards */
+.gv-lines{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+.gv-lines div{display:flex; flex-direction:column; gap:3px; min-width:0}
+.gv-lines span{font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); font-weight:700}
+.gv-lines b{font-family:var(--display); font-size:22px; font-weight:700; line-height:1; white-space:nowrap}
+.gv-lines small{font-size:11px; color:var(--mute)} .gv-lines .up{color:var(--good)} .gv-lines .dn{color:#f18a97}
+.gv-floor{display:grid; grid-template-columns:1fr; gap:10px}
+.fl-t h4{display:flex; align-items:center; gap:6px; margin:0 0 4px; font-family:var(--display); font-size:13px; letter-spacing:.06em; text-transform:uppercase}
+.fl-t h4 img{width:18px; height:18px; object-fit:contain}
+.fl-p{display:grid; grid-template-columns:minmax(0,1fr) auto auto; column-gap:8px; align-items:baseline; padding:4px 0 4px 8px; border-left:3px solid var(--tc); font-size:12px; cursor:pointer}
+.fl-p b{white-space:nowrap; overflow:hidden; text-overflow:ellipsis} .fl-p i{display:none}
+.fl-p span{color:var(--mute); font-size:11px; white-space:nowrap} .fl-p em{font-style:normal; font-size:10.5px; color:var(--dim); font-weight:700; min-width:30px; text-align:right}
+.fl-p em.pf4{color:var(--warn)} .fl-p em.pf5{color:var(--bad)}
+.gv-card h4{margin:10px 0 4px; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim)}
+table.gv-st{width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums}
+table.gv-st td{padding:5px 4px; border-top:1px solid rgba(255,255,255,.05); white-space:nowrap; color:var(--mute)}
+table.gv-st td:first-child{display:flex; align-items:center; gap:7px; color:var(--ink)} table.gv-st td img{width:18px; height:18px; object-fit:contain}
+table.gv-st td:not(:first-child){text-align:right}
+table.gv-st tr.me td{background:rgba(255,255,255,.05); color:var(--ink); font-weight:700}
+.gv-news a{display:block; padding:8px 0; border-top:1px solid rgba(255,255,255,.05); color:inherit; text-decoration:none}
+.gv-news a:first-child{border-top:0; padding-top:0}
+.gv-news b{display:block; font-size:12.5px; line-height:1.35} .gv-news span{display:block; font-size:11.5px; color:var(--dim); line-height:1.4; margin-top:2px}
+.gv-news a[href]:hover b{text-decoration:underline}
+.gv-pair{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start}
+.gv-pair:has(>div:empty){grid-template-columns:minmax(0,1fr)} .gv-pair>div:empty{display:none}
+@media (max-width:760px){ .gv-pair{grid-template-columns:minmax(0,1fr)} }
+.gv-foot{margin-top:14px; font-size:11px; color:var(--dim)}
+@media (max-width:900px){ #gcWatch{flex:1 0 auto; justify-content:flex-end} #gcWatch a.watch{font-size:12px; padding:6px 11px} }
+@media (max-width:760px){
+  .gv-hd .gv-meta{order:5; width:100%; font-size:11.5px}
+  .gv-hd .note{order:6}
+  a.watch span{display:none}
+  .sb-s{padding:5px 9px 3px; border-radius:7px}
+  .gv-lines b{font-size:18px}
+}
 /* phone and narrow screens: one column in the order scorebug, leaders, last plays, tabs, chart */
 @media (max-width:1000px){
   .gv{grid-template-columns:minmax(0,1fr)}
