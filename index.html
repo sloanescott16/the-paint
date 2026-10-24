@@ -3334,10 +3334,16 @@ function watchable(g){ return !!g&&(g.live||(g.state==='pre'&&g.date-Date.now()<
 function gvNets(g){ var c=(((S.gc.js||{}).header||{}).competitions||[])[0]||{}, out=[], seen={}, fav=g.h.id===FAV||g.a.id===FAV;
   (c.broadcasts||[]).slice().sort(function(x,y){ return (y.isNational?1:0)-(x.isNational?1:0); }).forEach(function(b){
     var n=String((b.media||{}).shortName||(b.names||[])[0]||'').trim(); if(!n||seen[n])return;
-    if(!b.isNational&&!(fav&&/MavsTV|KFAA/i.test(n)))return; seen[n]=1; out.push(n); });
+    if(!b.isNational&&!fav)return; seen[n]=1; out.push(n); });
   return out; }
+/* v19: the Captain has the Mavericks team pass on NBA.com, so every Mavericks game goes to the Mavs stream on NBA.com,
+   unless a national exclusive (ESPN, ABC, TNT, NBC/Peacock, Prime) carries it, since NBA.com blacks those out. The game's
+   own NBA.com page (nba.com/game/dal-vs-ind-0022600095) needs NBA's game number, which the ESPN feed does not carry and
+   NBA's own feeds refuse to other sites, so the team stream page is the reliable link. Local blackout rules may still apply. */
+var NAT_EXCL=/^(ESPN|ESPN2|ABC|TNT|TBS|truTV|TNT Sports|NBC|Peacock|Prime Video|Amazon Prime|Prime)$/i;
 function watchLink(g){
   var nets=g.nets||[], fam=null, i, k;
+  if((g.home===FAV||g.away===FAV)&&!nets.some(function(n){return NAT_EXCL.test(n)})) return {net:'NBA.com',label:'on NBA.com',url:'https://www.nba.com/mavs/stream'};
   for(i=0;i<nets.length&&!fam;i++) if(ESPN_FAM.test(nets[i])) fam=nets[i];
   if(fam){
     var air=W.map[g.id];
@@ -3353,7 +3359,7 @@ function watchLink(g){
 function watchHTML(g,kind){
   if(!watchable(g)) return '';
   var w=watchLink(g); if(!w) return '';
-  return '<a class="watch'+(kind?' '+kind:'')+'" href="'+esc(w.url)+'" target="_blank" rel="noopener" title="Watch on '+esc(w.net)+' (new tab)"><i></i>Watch<span>'+esc(w.net)+'</span></a>';
+  return '<a class="watch'+(kind?' '+kind:'')+'" href="'+esc(w.url)+'" target="_blank" rel="noopener" title="Watch on '+esc(w.net)+' (new tab)"><i></i>Watch<span>'+esc(w.label||w.net)+'</span></a>';
 }
 function gvWatchHTML(g){
   var wg={id:g.id, live:isLive(g), state:g.state, date:+new Date(g.date), home:g.h.id, away:g.a.id, nets:gvNets(g)};
