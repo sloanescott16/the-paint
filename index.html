@@ -790,6 +790,8 @@ svg.court text.tn{fill:#2c3342; font:700 3.2px var(--display); letter-spacing:.1
 .mfg{position:absolute; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%;
   border:2px solid #0b0e14; box-shadow:0 0 0 1px rgba(255,255,255,.85), 0 0 9px rgba(255,255,255,.3)}
 .mfx{position:relative; height:14px; margin-top:3px}
+.mfw .mfnow{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 3}
+.mfnd{position:absolute; width:7.2px; height:7.2px; margin:-3.6px 0 0 -3.6px; box-sizing:border-box; border-radius:50%; background:#fff; border:2px solid #fff; z-index:2; pointer-events:none}
 .mfp{position:absolute; top:0; transform:translateX(-50%); font-size:9.5px; letter-spacing:.09em;
   text-transform:uppercase; color:var(--dim); font-weight:700; white-space:nowrap}
 .mfnote{font-size:11.5px; color:var(--mute); margin-top:4px}
@@ -2891,7 +2893,10 @@ function gcMomentum(g,C,ax){
     '<clipPath id="mfB"><rect x="0" y="'+MID+'" width="'+W+'" height="'+(H-MID)+'"/></clipPath></defs>'+grid+
     '<g clip-path="url(#mfT)"><path d="'+area+'" fill="'+C[pv]+'" opacity=".4"/><path d="'+line+'" fill="none" stroke="'+C[pv]+'" stroke-width="2" vector-effect="non-scaling-stroke"/></g>'+
     '<g clip-path="url(#mfB)"><path d="'+area+'" fill="'+C[ot]+'" opacity=".4"/><path d="'+line+'" fill="none" stroke="'+C[ot]+'" stroke-width="2" vector-effect="non-scaling-stroke"/></g>'+
-    '<line class="mfax" x1="0" x2="'+W+'" y1="'+MID+'" y2="'+MID+'" vector-effect="non-scaling-stroke"/></svg>';
+    '<line class="mfax" x1="0" x2="'+W+'" y1="'+MID+'" y2="'+MID+'" vector-effect="non-scaling-stroke"/>'+
+    (ax&&!isFinal(g)?'<line class="mfnow" x1="'+X(endT).toFixed(2)+'" x2="'+X(endT).toFixed(2)+'" y1="0" y2="'+H+'" vector-effect="non-scaling-stroke"/>':'')+'</svg>';
+  /* v20: the now marker on a live game, as in Win probability and The lead (Crease v20) */
+  var nowDot=ax&&!isFinal(g)?'<span class="mfnd" style="left:'+(endT/XT*100).toFixed(3)+'%;top:'+Y(m[m.length-1]).toFixed(2)+'%;border-color:'+(m[m.length-1]>=0?C[pv]:C[ot])+'"></span>':'';
   /* dots mark the lead changes */
   var dots='', lead=0, nd=0;
   (S.gc.js.plays||[]).forEach(function(p){
@@ -2913,7 +2918,7 @@ function gcMomentum(g,C,ax){
   var head=rel<0.15?'Trading punches':(nick(who2)+(rel>0.55?' on a tear':' with the momentum'));
   var note='<b>'+esc(head)+'</b>'+(isLive(g)?' right now.':' at the buzzer.')+' Last three minutes '+esc(ab(up))+' '+ru+', '+esc(ab(dn))+' '+rd+'.';
   if(ax){ S.gc.ser=S.gc.ser||{}; S.gc.ser.mf={pts:m.map(function(v,i){return [i*step,v]}),fmt:function(v){ var r=Math.abs(v)/maxA; return r<0.15?'Even':ab(v>0?up:dn)+' '+(r>0.55?'on a tear':'on top'); },col:function(v){return v>=0?C[pv]:C[ot]}};
-    return '<div class="mflow gv-mfa"><div class="mfw"><div class="gv-pa" data-md="mf">'+svg+dots+'<div class="gv-hv"></div></div>'+chips+'</div><div class="mfx"><div class="mfxi">'+labs+'</div></div><div class="mfnote">'+note+'</div></div>'; }
+    return '<div class="mflow gv-mfa"><div class="mfw"><div class="gv-pa" data-md="mf">'+svg+dots+nowDot+'<div class="gv-hv"></div></div>'+chips+'</div><div class="mfx"><div class="mfxi">'+labs+'</div></div><div class="mfnote">'+note+'</div></div>'; }
   var body='<div class="mflow"><div class="mfw">'+svg+chips+dots+'</div><div class="mfx">'+labs+'</div><div class="mfnote">'+note+'</div></div>';
   return gcard('Game flow',body,'');   /* v11: no caption on the game flow */
 }
