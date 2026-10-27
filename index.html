@@ -2730,6 +2730,7 @@ function gcRender(){
   var h=gvRender();   /* v19: the broadcast layout */
   el.innerHTML=h;
   [].forEach.call(el.querySelectorAll('[data-keep]'),function(n){ if(keep[n.dataset.keep]!=null)n.scrollTop=keep[n.dataset.keep]; });
+  gvReapply();   /* v20: a hover survives the live refresh */
 }
 function gcHeader(g,C){
   var title=g.state==='pre'?'Preview':isLive(g)?'Game Center':'Game Breakdown', why=chipFor(g);
@@ -3168,9 +3169,13 @@ function gvHover(t){ var ser=(S.gc||{}).ser||{}; document.querySelectorAll('.gv-
   if(t==null||isNaN(t)){ hv.className='gv-hv'; hv.innerHTML=''; return; }
   var tt=Math.max(0,Math.min(isNaN(nw)?T:nw,t)), sr=ser[pa.dataset.md], v=sr?gvValAt(sr,tt):null, pc=tt/T*100;
   hv.className='gv-hv on'; hv.dataset.t=tt; hv.innerHTML='<i style="left:'+pc.toFixed(3)+'%"></i><b class="'+(pc>60?'l':'')+'" style="left:'+pc.toFixed(3)+'%"><u>'+gvClock(tt)+'</u>'+(v==null?'':'<span style="color:'+sr.col(v)+'">'+esc(sr.fmt(v))+'</span>')+'</b>'; }); }
-function gvPt(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(!pa)return; var r=pa.getBoundingClientRect(); if(!r.width)return; gvHover((e.clientX-r.left)/r.width*(+pa.dataset.t||2880)); }
+var gvLH=null;   /* v20: where the pointer last hovered a chart, so a hover survives the live refresh (The Crease's gxReapply) */
+function gvPt(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(!pa)return; var r=pa.getBoundingClientRect(); if(!r.width)return; gvLH={x:e.clientX,y:e.clientY}; gvHover((e.clientX-r.left)/r.width*(+pa.dataset.t||2880)); }
+/* after a re-render (the live refresh every 5 s) put the hover back where the pointer still is */
+function gvReapply(){ var lh=gvLH; if(!lh)return; var t=document.elementFromPoint(lh.x,lh.y), pa=t&&t.closest&&t.closest('.gv-pa'); if(pa)gvPt({target:t,clientX:lh.x,clientY:lh.y}); else { gvLH=null; gvHover(null); } }
 document.addEventListener('pointermove',gvPt); document.addEventListener('pointerdown',gvPt);
-document.addEventListener('pointerout',function(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(pa&&!(e.relatedTarget&&pa.contains(e.relatedTarget)))gvHover(null); });
+document.addEventListener('pointerout',function(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(pa&&!(e.relatedTarget&&pa.contains(e.relatedTarget))&&document.contains(pa)){ gvLH=null; gvHover(null); } });
+document.documentElement.addEventListener('mouseleave',function(){ gvLH=null; gvHover(null); });
 function gvCharts(g,C){ S.gc.ser={}; var T=gvT(g), nw=gvNow(g); return ['mf','wp','mg'].map(function(m){return '<div class="r5">'+gvChart(g,C,m)+'</div>'}).join('').replace(/class="gv-pa" data-md="(\w+)"/g,'class="gv-pa" data-md="$1" data-t="'+T+'" data-now="'+nw+'"'); }
 /* one chart per box: md is 'mf' (the v9 momentum wave), 'wp' (win probability) or 'mg' (the lead) */
 function gvChart(g,C,md){
