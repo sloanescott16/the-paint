@@ -2861,11 +2861,12 @@ function mfEvents(g){
   out.sort(function(a,b){ return a.t-b.t; });
   return out;
 }
-function gcMomentum(g,C){
+function gcMomentum(g,C,ax){
   var ev=mfEvents(g); if(ev.length<4) return '';
   var pv=persp(g), ot=pv==='a'?'h':'a', up=g[pv].id, dn=g[ot].id;
   var maxT=2880; ev.forEach(function(e){ if(e.t>maxT) maxT=Math.ceil((e.t-2880)/300)*300+2880; });
-  var endT=isFinal(g)?maxT:Math.max(240,ev[ev.length-1].t);
+  var endT=isFinal(g)?maxT:Math.max(240,ev[ev.length-1].t), XT=endT;
+  if(ax){ XT=ax.T; endT=Math.min(XT,Math.max(1,ax.now)); }   /* v20: game center shares one time axis with the other charts */
   var W=1000,H=100,MID=50,AMP=43,N=340,SIG=78,step=endT/N,lo=0,m=[],maxA=0,i,k;
   for(i=0;i<=N;i++){
     var t=i*step, v=0;
@@ -2874,15 +2875,15 @@ function gcMomentum(g,C){
     m.push(v); if(Math.abs(v)>maxA) maxA=Math.abs(v);
   }
   maxA=Math.max(maxA,8);
-  function X(t){ return t/endT*W; }
+  function X(t){ return t/XT*W; }
   function Y(v){ return MID-(v/maxA)*AMP; }
   var dd=m.map(function(v,i){ return X(i*step).toFixed(2)+' '+Y(v).toFixed(2); });
-  var line='M'+dd.join('L'), area='M0 '+MID+'L'+dd.join('L')+'L'+W+' '+MID+'Z';
+  var line='M'+dd.join('L'), area='M0 '+MID+'L'+dd.join('L')+'L'+X(endT).toFixed(2)+' '+MID+'Z';
   var grid='', labs='', q=0;
-  for(var s2=0;s2<endT-30;s2+=(s2<2880?720:300)){
+  for(var s2=0;s2<XT-30;s2+=(s2<2880?720:300)){
     q++;
     if(s2) grid+='<line class="mfdiv" x1="'+X(s2).toFixed(1)+'" x2="'+X(s2).toFixed(1)+'" y1="5" y2="'+(H-5)+'" vector-effect="non-scaling-stroke"/>';
-    labs+='<span class="mfp" style="left:'+((s2+Math.min(endT,s2+(s2<2880?720:300)))/2/endT*100).toFixed(2)+'%">'+qName(q)+'</span>';
+    labs+='<span class="mfp" style="left:'+((s2+Math.min(XT,s2+(s2<2880?720:300)))/2/XT*100).toFixed(2)+'%">'+qName(q)+'</span>';
   }
   var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
     '<defs><clipPath id="mfT"><rect x="0" y="0" width="'+W+'" height="'+MID+'"/></clipPath>'+
@@ -2900,7 +2901,7 @@ function gcMomentum(g,C){
     if(first||nd>=30) return;
     nd++;
     var who=sgn>0?g.h.id:g.a.id, t=tOf(p);
-    dots+='<span class="mfg" style="left:'+Math.min(99.5,Math.max(.5,t/endT*100)).toFixed(2)+'%;background:'+(who===up?C[pv]:C[ot])+'" title="'+esc('Lead change · '+qName((p.period||{}).number||1)+' '+((p.clock||{}).displayValue||'')+' · '+(p.text||''))+'"></span>';
+    dots+='<span class="mfg" style="left:'+Math.min(99.5,Math.max(.5,t/XT*100)).toFixed(2)+'%;background:'+(who===up?C[pv]:C[ot])+'" title="'+esc('Lead change · '+qName((p.period||{}).number||1)+' '+((p.clock||{}).displayValue||'')+' · '+(p.text||''))+'"></span>';
   });
   var chips='<span class="mft h" style="color:'+C[pv]+'">'+imgT(up)+esc(ab(up))+'</span>'+
     '<span class="mft a" style="color:'+C[ot]+'">'+imgT(dn)+esc(ab(dn))+'</span>';
@@ -2910,6 +2911,8 @@ function gcMomentum(g,C){
   var now=m[m.length-1], rel=Math.abs(now)/maxA, who2=now>0?up:dn;
   var head=rel<0.15?'Trading punches':(nick(who2)+(rel>0.55?' on a tear':' with the momentum'));
   var note='<b>'+esc(head)+'</b>'+(isLive(g)?' right now.':' at the buzzer.')+' Last three minutes '+esc(ab(up))+' '+ru+', '+esc(ab(dn))+' '+rd+'.';
+  if(ax){ S.gc.ser=S.gc.ser||{}; S.gc.ser.mf={pts:m.map(function(v,i){return [i*step,v]}),fmt:function(v){ var r=Math.abs(v)/maxA; return r<0.15?'Even':ab(v>0?up:dn)+' '+(r>0.55?'on a tear':'on top'); },col:function(v){return v>=0?C[pv]:C[ot]}};
+    return '<div class="mflow gv-mfa"><div class="mfw"><div class="gv-pa" data-md="mf">'+svg+dots+'<div class="gv-hv"></div></div>'+chips+'</div><div class="mfx"><div class="mfxi">'+labs+'</div></div><div class="mfnote">'+note+'</div></div>'; }
   var body='<div class="mflow"><div class="mfw">'+svg+chips+dots+'</div><div class="mfx">'+labs+'</div><div class="mfnote">'+note+'</div></div>';
   return gcard('Game flow',body,'');   /* v11: no caption on the game flow */
 }
@@ -3156,17 +3159,29 @@ function gvLast(g,C){
 }
 /* v20: the three charts in their own boxes, as on The Crease: Game flow sits directly on top of Win probability, then
    The lead. v19 had folded all three into one box behind Win % / Lead / Flow buttons. */
-function gvCharts(g,C){ return ['mf','wp','mg'].map(function(m){return '<div class="r5">'+gvChart(g,C,m)+'</div>'}).join(''); }
+/* v20: one time axis for all three game center charts: the whole game (OT added as played), plot area 30/380 in from the left and 10/380 from the right; hover in any one marks the same moment in all three */
+function gvT(g){ var maxT=2880; (S.gc.js.plays||[]).forEach(function(p){ var t=tOf(p); if(t>maxT)maxT=Math.ceil((t-2880)/300)*300+2880; }); return maxT; }
+function gvNow(g){ var T=gvT(g); if(isFinal(g))return T; var n=0; (S.gc.js.plays||[]).forEach(function(p){ var t=tOf(p); if(t>n)n=t; }); return n; }
+function gvClock(t){ var q,r; if(t<2880){ q=Math.min(4,Math.floor(t/720)+1); r=q*720-t; } else { q=5+Math.floor((t-2880)/300); r=2880+(q-4)*300-t; } r=Math.max(0,Math.round(r)); return qName(q)+' '+Math.floor(r/60)+':'+('0'+r%60).slice(-2); }
+function gvValAt(sr,t){ var p=sr.pts, v=null; for(var i=0;i<p.length;i++){ if(p[i][0]<=t)v=p[i][1]; else break; } return v==null&&p.length?p[0][1]:v; }
+function gvHover(t){ var ser=(S.gc||{}).ser||{}; document.querySelectorAll('.gv-pa').forEach(function(pa){ var hv=pa.querySelector('.gv-hv'); if(!hv)return; var T=+pa.dataset.t||2880, nw=+pa.dataset.now;
+  if(t==null||isNaN(t)){ hv.className='gv-hv'; hv.innerHTML=''; return; }
+  var tt=Math.max(0,Math.min(isNaN(nw)?T:nw,t)), sr=ser[pa.dataset.md], v=sr?gvValAt(sr,tt):null, pc=tt/T*100;
+  hv.className='gv-hv on'; hv.dataset.t=tt; hv.innerHTML='<i style="left:'+pc.toFixed(3)+'%"></i><b class="'+(pc>60?'l':'')+'" style="left:'+pc.toFixed(3)+'%"><u>'+gvClock(tt)+'</u>'+(v==null?'':'<span style="color:'+sr.col(v)+'">'+esc(sr.fmt(v))+'</span>')+'</b>'; }); }
+function gvPt(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(!pa)return; var r=pa.getBoundingClientRect(); if(!r.width)return; gvHover((e.clientX-r.left)/r.width*(+pa.dataset.t||2880)); }
+document.addEventListener('pointermove',gvPt); document.addEventListener('pointerdown',gvPt);
+document.addEventListener('pointerout',function(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(pa&&!(e.relatedTarget&&pa.contains(e.relatedTarget)))gvHover(null); });
+function gvCharts(g,C){ S.gc.ser={}; var T=gvT(g), nw=gvNow(g); return ['mf','wp','mg'].map(function(m){return '<div class="r5">'+gvChart(g,C,m)+'</div>'}).join('').replace(/class="gv-pa" data-md="(\w+)"/g,'class="gv-pa" data-md="$1" data-t="'+T+'" data-now="'+nw+'"'); }
 /* one chart per box: md is 'mf' (the v9 momentum wave), 'wp' (win probability) or 'mg' (the lead) */
 function gvChart(g,C,md){
   var js=S.gc.js, plays=(js.plays||[]), wp=js.winprobability||[], pv=persp(g), ot=pv==='a'?'h':'a';
   var sc=plays.filter(function(p){return p.awayScore!=null}), tabs='';
   var ttl={mf:'Game flow',wp:'Win probability',mg:'The lead'}[md];
   if(md==='mf'){ if(mfEvents(g).length<4)return gvCard(ttl,'<div class="empty">The flow fills in once the ball goes up.</div>');
-    var mm=gcMomentum(g,C), i0=mm.indexOf('<div class="gb">'); return gvCard(ttl,'<div class="gv-mf">'+(i0>=0?mm.slice(i0+16,mm.length-12):'')+'</div>'); }
+    return gvCard(ttl,'<div class="gv-mf">'+gcMomentum(g,C,{T:gvT(g),now:gvNow(g)})+'</div>'); }
   if(md==='wp'&&!wp.length)return gvCard(ttl,'<div class="empty">'+(sc.length<2?'The chart fills in once the ball goes up.':'No win probability from the feed for this game.')+'</div>');
   if(md==='mg'&&sc.length<2)return gvCard(ttl,'<div class="empty">The chart fills in once the ball goes up.</div>');
-  var maxT=2880; plays.forEach(function(p){ var t=tOf(p); if(t>maxT)maxT=Math.ceil((t-2880)/300)*300+2880; });
+  var maxT=gvT(g);
   var W=380,H=176,pl=30,pr=10,pt=10,pb=20, iw=W-pl-pr, ih=H-pt-pb;
   function X(t){return pl+Math.min(maxT,Math.max(0,t))/maxT*iw}
   var pts=[], lo, hi, Y, fmt, nowV, big=10;
@@ -3186,6 +3201,7 @@ function gvChart(g,C,md){
     big=Math.ceil(big/10)*10; Y=function(m){return pt+ih/2-m/big*(ih/2)}; fmt=function(m){return m>0?'+'+m:m<0?String(m):'Level'};
   }
   var last=pts[pts.length-1], endT=isFinal(g)?maxT:last[0];
+  S.gc.ser=S.gc.ser||{}; S.gc.ser[md]={pts:pts,fmt:md==='wp'?function(v){ var w=v>=.5?pv:ot; return ab(g[w].id)+' '+Math.round((v>=.5?v:1-v)*100)+'%'; }:function(v){ return v>0?ab(g[pv].id)+' +'+v:v<0?ab(g[ot].id)+' +'+(-v):'Level'; },col:function(v){ return (md==='wp'?v>=.5:v>=0)?C[pv]:C[ot]; }};
   var d='', prev=null;
   pts.forEach(function(q,i){ var x=X(q[0]).toFixed(1); if(!i){ d='M'+x+','+Y(q[1]).toFixed(1); } else if(md==='mg'){ d+=' L'+x+','+Y(prev).toFixed(1)+' L'+x+','+Y(q[1]).toFixed(1); } else d+=' L'+x+','+Y(q[1]).toFixed(1); prev=q[1]; });
   if(isFinal(g))d+=' L'+X(maxT).toFixed(1)+','+Y(last[1]).toFixed(1);
@@ -3206,7 +3222,7 @@ function gvChart(g,C,md){
   var v=last[1], who, big2;
   if(md==='wp'){ who=v>=.5?pv:ot; big2='<b style="color:'+C[who]+'">'+Math.round((v>=.5?v:1-v)*100)+'%</b><span>'+imgT(g[who].id)+esc(nick(g[who].id))+(isFinal(g)?' (final)':' to win')+'</span>'; }
   else { who=v>0?pv:v<0?ot:null; big2=who?'<b style="color:'+C[who]+'">+'+Math.abs(v)+'</b><span>'+imgT(g[who].id)+esc(nick(g[who].id))+(isFinal(g)?' won by':' lead by')+' '+Math.abs(v)+'</span>':'<b>Level</b><span>Nobody ahead</span>'; }
-  return gvCard(md==='wp'?'Win probability':'The lead','<div class="gv-now">'+big2+(isLive(g)?'<em>now, '+esc(statusTxt(g))+'</em>':'')+'</div><div class="gv-chw">'+svg+'</div>','',tabs);
+  return gvCard(md==='wp'?'Win probability':'The lead','<div class="gv-now">'+big2+(isLive(g)?'<em>now, '+esc(statusTxt(g))+'</em>':'')+'</div><div class="gv-chw">'+svg+'<div class="gv-pa" data-md="'+md+'" style="left:'+(pl/W*100).toFixed(4)+'%;width:'+(iw/W*100).toFixed(4)+'%;top:'+(pt/H*100).toFixed(4)+'%;height:'+(ih/H*100).toFixed(4)+'%"><div class="gv-hv"></div></div></div>','',tabs);
 }
 /* box score: one team at a time, sticky names, totals row, top scorer marked, DNPs folded into one line */
 function gvBox(g,C){
@@ -3782,6 +3798,17 @@ svg.gv-ch .mid{stroke:#4a5366; stroke-width:1; stroke-dasharray:3 3}
 svg.gv-ch .qd{stroke:rgba(255,255,255,.09); stroke-width:1}
 svg.gv-ch .now{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 3}
 .gv-mf .mflow{margin:0}
+.gv-chw{position:relative}
+.gv-chw>.gv-pa{position:absolute}
+.gv-mfa .gv-pa{position:absolute; top:0; bottom:0; left:7.8947%; right:2.6316%}
+.gv-mfa .gv-pa svg{position:absolute; inset:0; width:100%; height:100%; display:block}
+.gv-mfa .mfxi{position:absolute; top:0; bottom:0; left:7.8947%; right:2.6316%}
+.gv-pa{touch-action:pan-y; cursor:crosshair}
+.gv-hv{position:absolute; inset:0; pointer-events:none; z-index:3}
+.gv-hv i{position:absolute; top:0; bottom:0; width:0; border-left:1px solid rgba(255,255,255,.7)}
+.gv-hv b{position:absolute; top:2px; transform:translateX(6px); background:rgba(12,15,22,.92); border:1px solid rgba(255,255,255,.14); border-radius:6px; padding:2px 6px; font:600 10.5px var(--body); white-space:nowrap; display:flex; gap:6px}
+.gv-hv b.l{transform:translateX(calc(-100% - 6px))}
+.gv-hv b u{text-decoration:none; color:var(--mute)}
 /* leaders */
 /* v19 fix: leaders one player per row */
 .lds2 .ldr{padding:8px 0 4px; border-top:1px solid rgba(255,255,255,.05)}
