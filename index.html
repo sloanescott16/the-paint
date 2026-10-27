@@ -3205,11 +3205,11 @@ function gvChart(g,C,md){
     if(g.a.score!=null&&g.h.score!=null){ var hm=pv==='a'?g.a.score-g.h.score:g.h.score-g.a.score; if(pts[pts.length-1][1]!==hm)pts.push([pts[pts.length-1][0],hm]); big=Math.max(big,Math.abs(hm)); }   /* v19 fix: ends on the scorebug's score */
     big=Math.ceil(big/10)*10; Y=function(m){return pt+ih/2-m/big*(ih/2)}; fmt=function(m){return m>0?'+'+m:m<0?String(m):'Level'};
   }
-  var last=pts[pts.length-1], endT=isFinal(g)?maxT:last[0];
+  var last=pts[pts.length-1], endT=isFinal(g)?maxT:Math.max(last[0],gvNow(g));   /* v20: a live line runs to the latest play, the same pixel as the other charts (Crease v20) */
   S.gc.ser=S.gc.ser||{}; S.gc.ser[md]={pts:pts,fmt:md==='wp'?function(v){ var w=v>=.5?pv:ot; return ab(g[w].id)+' '+Math.round((v>=.5?v:1-v)*100)+'%'; }:function(v){ return v>0?ab(g[pv].id)+' +'+v:v<0?ab(g[ot].id)+' +'+(-v):'Level'; },col:function(v){ return (md==='wp'?v>=.5:v>=0)?C[pv]:C[ot]; }};
   var d='', prev=null;
   pts.forEach(function(q,i){ var x=X(q[0]).toFixed(1); if(!i){ d='M'+x+','+Y(q[1]).toFixed(1); } else if(md==='mg'){ d+=' L'+x+','+Y(prev).toFixed(1)+' L'+x+','+Y(q[1]).toFixed(1); } else d+=' L'+x+','+Y(q[1]).toFixed(1); prev=q[1]; });
-  if(isFinal(g))d+=' L'+X(maxT).toFixed(1)+','+Y(last[1]).toFixed(1);
+  if(isFinal(g))d+=' L'+X(maxT).toFixed(1)+','+Y(last[1]).toFixed(1); else if(endT>last[0])d+=' L'+X(endT).toFixed(1)+','+Y(last[1]).toFixed(1);
   var mid=md==='wp'?Y(.5):Y(0), area=d+' L'+X(endT).toFixed(1)+','+mid.toFixed(1)+' L'+X(0)+','+mid.toFixed(1)+' Z';
   var grid='', lab='', q=0;
   for(var s=0;s<maxT;s+=(s<2880?720:300)){ q++; var e=Math.min(maxT,s+(s<2880?720:300));
