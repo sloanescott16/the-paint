@@ -3154,15 +3154,18 @@ function gvLast(g,C){
     return '<div class="lp2'+(p.scoringPlay?' sc':'')+'" style="--tc:'+(k?C[k]:'var(--line)')+'"><span class="ck">'+qName((p.period||{}).number||1)+' '+esc((p.clock||{}).displayValue||'')+'</span><span class="tx">'+linkNames(esc(p.text||''))+'</span>'+(p.scoringPlay?'<b class="ps2">'+p.awayScore+'-'+p.homeScore+'</b>':'')+'</div>'; }).join('');
   return gvCard('Last plays','<div class="lp2s">'+rows+'</div>','','<button class="lnk" data-gc="tab" data-v="pbp">All plays</button>');
 }
-/* one chart, three views: win probability, the lead (margin), and the v9 momentum wave */
-function gvChart(g,C){
+/* v20: the three charts in their own boxes, as on The Crease: Game flow sits directly on top of Win probability, then
+   The lead. v19 had folded all three into one box behind Win % / Lead / Flow buttons. */
+function gvCharts(g,C){ return ['mf','wp','mg'].map(function(m){return '<div class="r5">'+gvChart(g,C,m)+'</div>'}).join(''); }
+/* one chart per box: md is 'mf' (the v9 momentum wave), 'wp' (win probability) or 'mg' (the lead) */
+function gvChart(g,C,md){
   var js=S.gc.js, plays=(js.plays||[]), wp=js.winprobability||[], pv=persp(g), ot=pv==='a'?'h':'a';
-  var sc=plays.filter(function(p){return p.awayScore!=null});
-  if(sc.length<2&&!wp.length)return gvCard('Win probability','<div class="empty">The chart fills in once the ball goes up.</div>');
-  var modes=[]; if(wp.length)modes.push(['wp','Win %']); modes.push(['mg','Lead']); if(mfEvents(g).length>=4)modes.push(['mf','Flow']);
-  var md=S.gc.ch&&modes.some(function(m){return m[0]===S.gc.ch})?S.gc.ch:modes[0][0];
-  var tabs='<span class="gtab">'+modes.map(function(m){return '<button data-gc="ch" data-v="'+m[0]+'" class="'+(m[0]===md?'on':'')+'">'+m[1]+'</button>'}).join('')+'</span>';
-  if(md==='mf'){ var mm=gcMomentum(g,C), i0=mm.indexOf('<div class="gb">'); return gvCard('Game flow','<div class="gv-mf">'+(i0>=0?mm.slice(i0+16,mm.length-12):'')+'</div>','',tabs); }
+  var sc=plays.filter(function(p){return p.awayScore!=null}), tabs='';
+  var ttl={mf:'Game flow',wp:'Win probability',mg:'The lead'}[md];
+  if(md==='mf'){ if(mfEvents(g).length<4)return gvCard(ttl,'<div class="empty">The flow fills in once the ball goes up.</div>');
+    var mm=gcMomentum(g,C), i0=mm.indexOf('<div class="gb">'); return gvCard(ttl,'<div class="gv-mf">'+(i0>=0?mm.slice(i0+16,mm.length-12):'')+'</div>'); }
+  if(md==='wp'&&!wp.length)return gvCard(ttl,'<div class="empty">'+(sc.length<2?'The chart fills in once the ball goes up.':'No win probability from the feed for this game.')+'</div>');
+  if(md==='mg'&&sc.length<2)return gvCard(ttl,'<div class="empty">The chart fills in once the ball goes up.</div>');
   var maxT=2880; plays.forEach(function(p){ var t=tOf(p); if(t>maxT)maxT=Math.ceil((t-2880)/300)*300+2880; });
   var W=380,H=176,pl=30,pr=10,pt=10,pb=20, iw=W-pl-pr, ih=H-pt-pb;
   function X(t){return pl+Math.min(maxT,Math.max(0,t))/maxT*iw}
@@ -3304,7 +3307,7 @@ function gvRender(){
     var body=tab==='pbp'?gvPBP(g,C):tab==='stats'?gvStats(g,C):tab==='shots'?gvShots(g,C):gvBox(g,C);
     var tabs='<div class="gv-tabs" role="tablist">'+T.map(function(t){return '<button role="tab" data-gc="tab" data-v="'+t[0]+'" class="'+(t[0]===tab?'on':'')+'">'+t[1]+'</button>'}).join('')+'</div>';
     h+='<div class="gv"><div class="gv-main"><div class="r4 gv-tabbed">'+tabs+'<div class="gv-pane">'+body+'</div></div><div class="r8">'+gcInj(g)+'</div></div>'+
-      '<div class="gv-rail">'+(isLive(g)?'<div class="r3">'+gvFloor(g,C)+'</div>':'')+'<div class="r5">'+gvChart(g,C)+'</div><div class="r2">'+gvLeaders(g,C,'Game leaders')+'</div><div class="r3">'+gvLast(g,C)+'</div><div class="r5">'+gvLines(g,C)+'</div>'+(isFinal(g)?'<div class="r8">'+gvNews(g)+'</div>':'')+'</div></div>'+gvFoot(g);
+      '<div class="gv-rail">'+(isLive(g)?'<div class="r3">'+gvFloor(g,C)+'</div>':'')+gvCharts(g,C)+'<div class="r2">'+gvLeaders(g,C,'Game leaders')+'</div><div class="r3">'+gvLast(g,C)+'</div><div class="r5">'+gvLines(g,C)+'</div>'+(isFinal(g)?'<div class="r8">'+gvNews(g)+'</div>':'')+'</div></div>'+gvFoot(g);
   }
   return h;
 }
