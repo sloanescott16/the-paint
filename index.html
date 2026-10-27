@@ -3180,7 +3180,8 @@ function gvPt(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(!pa)re
 /* after a re-render (the live refresh every 5 s) put the hover back where the pointer still is */
 function gvReapply(){ var lh=gvLH; if(!lh)return; var t=document.elementFromPoint(lh.x,lh.y), pa=t&&t.closest&&t.closest('.gv-pa'); if(pa)gvPt({target:t,clientX:lh.x,clientY:lh.y}); else { gvLH=null; gvHover(null); } }
 document.addEventListener('pointermove',gvPt); document.addEventListener('pointerdown',gvPt);
-document.addEventListener('pointerout',function(e){ var pa=e.target.closest&&e.target.closest('.gv-pa'); if(pa&&!(e.relatedTarget&&pa.contains(e.relatedTarget))&&document.contains(pa)){ gvLH=null; gvHover(null); } });
+/* a finger lift fires pointerout, so touch ignores it and a tapped hover stays, as on The Crease (which clears only on mouseleave of the page) */
+document.addEventListener('pointerout',function(e){ if(e.pointerType==='touch')return; var pa=e.target.closest&&e.target.closest('.gv-pa'); if(pa&&!(e.relatedTarget&&pa.contains(e.relatedTarget))&&document.contains(pa)){ gvLH=null; gvHover(null); } });
 document.documentElement.addEventListener('mouseleave',function(){ gvLH=null; gvHover(null); });
 function gvCharts(g,C){ S.gc.ser={}; var T=gvT(g), nw=gvNow(g); return ['mf','wp','mg'].map(function(m){return '<div class="r5">'+gvChart(g,C,m)+'</div>'}).join('').replace(/class="gv-pa" data-md="(\w+)"/g,'class="gv-pa" data-md="$1" data-t="'+T+'" data-now="'+nw+'"'); }
 /* one chart per box: md is 'mf' (the v9 momentum wave), 'wp' (win probability) or 'mg' (the lead) */
