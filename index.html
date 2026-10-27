@@ -790,6 +790,7 @@ svg.court text.tn{fill:#2c3342; font:700 3.2px var(--display); letter-spacing:.1
 .mfg{position:absolute; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%;
   border:2px solid #0b0e14; box-shadow:0 0 0 1px rgba(255,255,255,.85), 0 0 9px rgba(255,255,255,.3)}
 .mfx{position:relative; height:14px; margin-top:3px}
+.mfp.fut,svg.gv-ch .ax.fut{opacity:.45}
 .mfw .mfnow{stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 3}
 .mfnd{position:absolute; width:7.2px; height:7.2px; margin:-3.6px 0 0 -3.6px; box-sizing:border-box; border-radius:50%; background:#fff; border:2px solid #fff; z-index:2; pointer-events:none}
 .mfp{position:absolute; top:0; transform:translateX(-50%); font-size:9.5px; letter-spacing:.09em;
@@ -2886,7 +2887,7 @@ function gcMomentum(g,C,ax){
   for(var s2=0;s2<XT-30;s2+=(s2<2880?720:300)){
     q++;
     if(s2) grid+='<line class="mfdiv" x1="'+X(s2).toFixed(1)+'" x2="'+X(s2).toFixed(1)+'" y1="5" y2="'+(H-5)+'" vector-effect="non-scaling-stroke"/>';
-    labs+='<span class="mfp" style="left:'+((s2+Math.min(XT,s2+(s2<2880?720:300)))/2/XT*100).toFixed(2)+'%">'+qName(q)+'</span>';
+    labs+='<span class="mfp'+(ax&&isLive(g)&&q>(g.period||1)?' fut':'')+'" style="left:'+((s2+Math.min(XT,s2+(s2<2880?720:300)))/2/XT*100).toFixed(2)+'%">'+qName(q)+'</span>';   /* v20: quarters still to come are dimmed (Crease v20) */
   }
   var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
     '<defs><clipPath id="mfT"><rect x="0" y="0" width="'+W+'" height="'+MID+'"/></clipPath>'+
@@ -3219,7 +3220,7 @@ function gvChart(g,C,md){
   var grid='', lab='', q=0;
   for(var s=0;s<maxT;s+=(s<2880?720:300)){ q++; var e=Math.min(maxT,s+(s<2880?720:300));
     if(s)grid+='<line class="qd" x1="'+X(s)+'" y1="'+pt+'" x2="'+X(s)+'" y2="'+(pt+ih)+'"/>';
-    lab+='<text class="ax" x="'+((X(s)+X(e))/2).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle">'+qName(q)+'</text>'; }
+    lab+='<text class="ax'+(isLive(g)&&q>(g.period||1)?' fut':'')+'" x="'+((X(s)+X(e))/2).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle">'+qName(q)+'</text>'; }
   var yl=md==='wp'?[[1,'100'],[.75,'75'],[.5,'50'],[.25,'25'],[0,'0']]:[[big,'+'+big],[big/2,'+'+big/2],[0,'0'],[-big/2,'-'+big/2],[-big,'-'+big]];   /* v19 fix: each value once, read from the top team's side */
   var ys=yl.map(function(y,i){ return '<line class="'+(i===2?'mid':'yg')+'" x1="'+pl+'" y1="'+Y(y[0]).toFixed(1)+'" x2="'+(W-pr)+'" y2="'+Y(y[0]).toFixed(1)+'"/><text class="ax" x="'+(pl-4)+'" y="'+(Y(y[0])+3).toFixed(1)+'" text-anchor="end"'+(i<2?' style="fill:'+C[pv]+'"':i>2?' style="fill:'+C[ot]+'"':'')+'>'+y[1]+'</text>'; }).join('')+
     '<text class="tl" x="'+(pl+5)+'" y="'+(pt+10)+'" style="fill:'+C[pv]+'">'+esc(ab(g[pv].id))+(md==='wp'?' win %':' ahead')+'</text>'+
