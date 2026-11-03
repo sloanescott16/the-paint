@@ -1854,7 +1854,7 @@ function cbbRow(g,side){
   var t=g[side], o=g[side==='h'?'a':'h'], cls='row';
   if(g.state==='post'&&!t.win&&o.win)cls+=' lose';
   var img=t.logo?'<img src="'+esc(t.logo)+'" alt="" loading="lazy" data-hide="1">':'<img alt="" style="visibility:hidden">';
-  return '<div class="'+cls+'">'+img+'<span class="nm">'+(t.rk?'<span class="rk">'+t.rk+'</span>':'')+esc(t.nm)+'<span class="wl">'+esc(t.rec)+'</span></span>'+
+  return '<div class="'+cls+'">'+img+'<span class="nm">'+(t.rk?'<span class="rk">'+t.rk+'</span>':'')+esc(t.nm)+'<span class="wl">'+esc(t.rec==='0-0'?'':t.rec)+'</span></span>'+   /* no 0-0 records on opening night */
     '<span class="sc">'+(g.state==='pre'||t.score==null?'':t.score)+'</span></div>';
 }
 function cbbChip(g,k){
