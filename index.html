@@ -1908,7 +1908,8 @@ function route(){
   if(m){ if(!S.gcTab)S.gcTab='live'; if(!S.gc||S.gc.id!==m[1])openGame(m[1]); setView('game'); scrollTo(0,0); return; }
   if(S.gc){ clearTimeout(S.gc.timer); S.gc=null; }
   var v=({'#sched':'sched','#live':'live','#stand':'stand','#season':'season','#race':'race','#home':'home'})[h]||'home';
-  S.from=h; S.gcTab=v; setView(v); renderAll();
+  var pv=S.view; S.from=h; S.gcTab=v; setView(v); renderAll();
+  if(v==='sched'&&pv&&pv!=='sched'&&pv!=='game')scrollTo(0,0);   /* v22: opening Schedule from another tab starts at the top; back from a game center and a re-tap keep their place */
 }
 function goGame(id){ S.back=location.hash||('#'+snDefault()); location.hash='#game-'+id; }
 
