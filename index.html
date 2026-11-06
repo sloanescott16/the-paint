@@ -242,9 +242,9 @@ body.v-sched #secLive,body.v-sched #secTonight,body.v-sched #secPath,body.v-sche
 .g .sd{white-space:nowrap; font-family:var(--body); font-size:9.5px; font-weight:700; color:var(--dim); border:1px solid #2c3342; border-radius:3px; padding:0 4px; margin-left:6px; vertical-align:2px}
 .g .sd.in{color:#8fb6ff; border-color:rgba(47,111,224,.6)}
 .g .sd.wc{color:#f0bd73; border-color:rgba(232,163,61,.5)}
-#sched .g.fav:not(.live){border-color:var(--line); background:var(--card)}
-#sched .g.imp{border-color:var(--blue); box-shadow:0 0 0 1px var(--blue),0 0 16px rgba(47,111,224,.25)}
-#sched .g.imp.fav{background:linear-gradient(180deg,rgba(47,111,224,.14),var(--card) 55%)}
+#schedList .g.fav:not(.live){border-color:var(--line); background:var(--card)}
+#schedList .g.imp{border-color:var(--blue); box-shadow:0 0 0 1px var(--blue),0 0 16px rgba(47,111,224,.25)}
+#schedList .g.imp.fav{background:linear-gradient(180deg,rgba(47,111,224,.14),var(--card) 55%)}
 .schnote{font-size:11.5px; color:var(--dim); margin-top:-4px}
 /* v8: playoff race wears teal down the left edge, nothing like the amber Texas ribbon */
 .bg.key.race{border-top:1px solid rgba(34,184,166,.45); border-color:rgba(34,184,166,.45);
@@ -253,7 +253,7 @@ body.v-sched #secLive,body.v-sched #secTonight,body.v-sched #secPath,body.v-sche
   border:1px solid var(--race); border-radius:20px; padding:0.3cqh 1.4cqw}
 .bg.key.race .bt{margin-top:max(10px,2.6cqh)}
 .bg .bchip.race,.g .chip.race{background:rgba(34,184,166,.16); color:#5fe0cf}
-#sched .g.imp.race{border-color:var(--race); box-shadow:0 0 0 1px var(--race),0 0 16px rgba(34,184,166,.22)}
+#schedList .g.imp.race{border-color:var(--race); box-shadow:0 0 0 1px var(--race),0 0 16px rgba(34,184,166,.22)}
 /* v8: league / division filter shared by Schedule and Scoreboard */
 .flt{display:none; font:inherit; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
   color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:7px; padding:5px 8px; cursor:pointer}
@@ -1166,7 +1166,7 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
       <span class="seg" id="sortSeg"></span>
       <span class="note" id="schNote"></span>
     </div>
-    <div id="sched"><div class="empty">Loading the schedule</div></div>
+    <div id="schedList"><div class="empty">Loading the schedule</div></div>
   </section>
 
   <section id="secStand">
@@ -1765,18 +1765,28 @@ function renderBoard(){
 }
 
 /* ---------- schedule ---------- */
+/* v22: the list's id is schedList, not sched: a link to #sched made the browser scroll to the list and hide the day strip under the header */
 /* v21: the Schedule covers the week (yesterday to five days on) so college games across the week are in reach; the NBA list for each day is as before */
 var DAYS=[[-1,'Yesterday'],[0,'Today'],[1,'Tomorrow'],[2],[3],[4],[5]];
 function dayLbl(d){ return d[1]||dayShift(d[0]).toLocaleDateString([], {weekday:'short'}); }
+S.dayFail={}; S.dayBusy={};   /* v22 */
 var SORTS=[['all','All games'],['race','Playoff race']];
 function renderSched(){
   $('daySeg').innerHTML=DAYS.map(function(d){return '<button data-day="'+d[0]+'" class="'+(S.dayOff===d[0]?'on':'')+'">'+esc(dayLbl(d))+'</button>'}).join('');
   $('sortSeg').innerHTML=SORTS.map(function(d){return '<button data-sort="'+d[0]+'" class="'+(S.sort===d[0]?'on':'')+'">'+d[1]+'</button>'}).join('');
   var list=S.days[S.dayOff];
-  if(!list){ $('sched').innerHTML='<div class="empty">Loading</div>'; loadDay(S.dayOff).then(renderSched).catch(fail); return; }
+  if(!list){   /* v22: a failed NBA call says so and retries in the NBA part; College is still requested and shown */
+    var off0=S.dayOff, ff=S.dayFail[off0];
+    if(!S.dayBusy[off0]&&(!ff||Date.now()-ff>=60e3)){
+      S.dayBusy[off0]=1;
+      loadDay(off0).then(function(){ S.dayFail[off0]=0; }, function(e){ S.dayFail[off0]=Date.now(); fail(e); setTimeout(function(){ if(S.view==='sched'&&S.dayOff===off0&&!S.days[off0])renderSched(); },61e3); })
+        .then(function(){ S.dayBusy[off0]=0; if(S.view==='sched'&&S.dayOff===off0)renderSched(); });
+    }
+    $('schedList').innerHTML='<div class="lgh nba"><h2>NBA</h2></div><div class="empty">'+(S.dayFail[off0]?'NBA scores are not coming through from ESPN just now. Retrying.':'Loading')+'</div>'+cbbSched(off0); return;
+  }
   var cb=cbbDay(S.dayOff);
   $('schNote').textContent=fmtDay(dayShift(S.dayOff).toISOString())+' · '+list.length+' NBA game'+(list.length===1?'':'s')+(cb?' · '+cb.list.length+' college':'');
-  $('sched').innerHTML='<div class="lgh nba"><h2>NBA</h2></div>'+nbaSched(list)+cbbSched(S.dayOff);
+  $('schedList').innerHTML='<div class="lgh nba"><h2>NBA</h2></div>'+nbaSched(list)+cbbSched(S.dayOff);
 }
 function nbaSched(list){
   if(!list.length){ var nx=nextFav(); return '<div class="empty">No NBA games on this day.'+(nx?' Dallas is back '+esc(fmtDay(nx.date))+'.':'')+'</div>'; }
