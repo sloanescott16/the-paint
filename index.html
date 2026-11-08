@@ -229,9 +229,47 @@ body.v-stand #secLive,body.v-stand #secTonight,body.v-stand #secPath,body.v-stan
 body.v-sched #secLive,body.v-sched #secTonight,body.v-sched #secPath,body.v-sched #secRace,body.v-sched #secRun,body.v-sched #odds{display:none}
 #secSched{margin-top:16px}
 /* v23 (job 1108-1120-yj2): college basketball has its own page inside The Paint, reached from the NBA | College switch in the bar, as Command Center's Saturday | Sunday switch reaches college football */
-#secCollege{display:none; margin-top:16px}
-body.v-college #secCollege{display:block}
-body.v-college .wrap>section:not(#secCollege),body.v-college #odds{display:none!important}
+#secCollege,.cbbsec{display:none; margin-top:16px}
+body.v-college.cv-sched #secCollege,body.cv-home #secCbHome,body.cv-season #secCbSeason,body.cv-race #secCbRace,body.cv-live #secCbLive,body.cv-stand #secCbStand{display:block}   /* v24: a college page for every tab */
+body.v-college .wrap>section:not(.cbbsec),body.v-college #odds,body.v-college #err{display:none!important}   /* v24: the NBA feed's banner stays on the NBA side */
+body.v-college #flt,body.v-college #favRec,body.v-college #stBtn{display:none!important}
+body:not(.v-college) #cbSt{display:none!important}
+.cg{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:12px; align-items:start; margin-top:12px}
+@media (max-width:900px){ .cg{grid-template-columns:minmax(0,1fr)} }
+.cbbsec .rk{font-family:var(--body); font-size:10.5px; font-weight:700; color:var(--mute); margin-right:5px; vertical-align:2px}
+.cbsum{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-top:4px}
+.cbsum img{width:40px; height:40px; object-fit:contain; flex:none}
+.cbsum b{display:block; font-family:var(--display); font-size:19px; color:var(--ink)}
+.cbsum span{display:block; font-size:12.5px; color:var(--mute); line-height:1.35}
+.cbin{display:flex; flex-direction:column; gap:8px; min-width:0}
+.cbin .games{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+a.cbnx{color:inherit; text-decoration:none}
+.cbsched{display:flex; flex-direction:column; min-width:0}
+a.cbg{display:grid; grid-template-columns:62px 20px 22px minmax(0,1fr) auto; align-items:center; gap:7px; padding:7px 2px; border-bottom:1px solid #1a1f29; color:inherit; text-decoration:none; font-size:13px}
+a.cbg:last-child{border-bottom:none}
+a.cbg:hover{background:rgba(255,255,255,.03)}
+a.cbg.live{background:rgba(255,59,78,.07)}
+a.cbg img{width:22px; height:22px; object-fit:contain}
+a.cbg .d{color:var(--mute); font-size:12px; white-space:nowrap}
+a.cbg .va{color:var(--dim); font-size:11px}
+a.cbg .o{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600}
+a.cbg .r{white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--mute); font-size:12.5px; text-align:right}
+.cbbsec b.w{color:var(--good)} .cbbsec b.l{color:var(--bad)} .cbbsec b.lv{color:var(--live)}
+.cbtag{display:inline-block; margin-left:6px; font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#b9c1d0; background:rgba(139,148,165,.16); border-radius:4px; padding:1px 5px; vertical-align:1px}
+a.cbnews{display:flex; flex-direction:column; gap:2px; color:inherit; text-decoration:none; padding:6px 0; border-bottom:1px solid #1a1f29}
+a.cbnews:last-child{border-bottom:none}
+a.cbnews b{font-size:13.5px; font-weight:600; line-height:1.3} a.cbnews span{font-size:11.5px; color:var(--dim)}
+a.cbnews:hover b{text-decoration:underline}
+.cbrow{display:flex; align-items:center; gap:8px; padding:4px 0; font-weight:600; font-size:13.5px}
+.cbrow img{width:22px; height:22px; object-fit:contain}
+.cbrow.fav{color:#8fb6ff}
+.cbcount{display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin:4px 0 12px; font-size:13px; color:var(--mute); font-weight:600}
+.cbcount .lv{color:var(--live)} .cbcount .seg{margin-left:auto}
+.cbtxt p{font-size:13px; line-height:1.5; color:var(--mute); margin:0} .cbtxt a{color:#8fb6ff}
+.cbbsec table.st .up{color:var(--good); font-size:11px} .cbbsec table.st .dn{color:var(--bad); font-size:11px}
+.cbbsec table.st .tm img{width:20px; height:20px}
+.flt.cbconf{margin-left:auto}
+@media (max-width:640px){ .cbcount .seg{margin-left:0} .cbsum{padding:9px 11px} a.cbg{grid-template-columns:52px 18px 20px minmax(0,1fr) auto; gap:5px; font-size:12.5px} }
 .bar .seg.lg{flex-shrink:0; padding:2px}
 .bar .seg.lg button{font-size:12px; padding:5px 11px}
 .bar .seg.lg button.on{background:#cc0000}
@@ -1117,6 +1155,7 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
     <option value="Atlantic">Atlantic</option><option value="Central">Central</option><option value="Southeast">Southeast</option></optgroup>
   </select>
   <div class="spacer"></div>
+  <a class="st" id="cbSt" href="#college-live" title="Open the college scores"><span class="dot" id="cbDot"></span><span id="cbStText">College</span></a>   <!-- v24 -->
   <a class="st" id="stBtn" href="#live" title="Open the full scoreboard"><span class="dot" id="dot"></span><span id="stText">loading</span></a>
   <button class="btn" id="fsBtn" hidden>Fullscreen</button>
 </div>
@@ -1179,13 +1218,34 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
     <div id="schedList"><div class="empty">Loading the schedule</div></div>
   </section>
 
-  <section id="secCollege">   <!-- v23: college basketball page -->
+  <section id="secCollege" class="cbbsec">   <!-- v23: college basketball page; v24: it is College Schedule -->
     <div class="head sch-head">
-      <h2>College basketball</h2>
+      <h2>Schedule</h2>
       <span class="seg" id="cbbDaySeg"></span>
       <span class="note" id="cbbNote"></span>
     </div>
     <div id="cbbList"><div class="empty">Loading the college games</div></div>
+  </section>
+
+  <section id="secCbHome" class="cbbsec">   <!-- v24: College Home -->
+    <div class="head"><h2>College Home</h2><span class="sub">Texas Tech first</span><span class="note" id="cbHmNote"></span></div>
+    <div id="cbHome"><div class="empty">Loading</div></div>
+  </section>
+  <section id="secCbSeason" class="cbbsec">   <!-- v24: College Season -->
+    <div class="head"><h2>The Season</h2><span class="sub">Texas Tech, then the nation</span></div>
+    <div id="cbSeason"><div class="empty">Loading</div></div>
+  </section>
+  <section id="secCbRace" class="cbbsec">   <!-- v24: College Top 25, in the Race slot -->
+    <div class="head"><h2>Top 25</h2><span class="sub">the polls and the road to March</span></div>
+    <div id="cbRace"><div class="empty">Loading</div></div>
+  </section>
+  <section id="secCbLive" class="cbbsec">   <!-- v24: College Scores -->
+    <div class="head"><h2>Scores</h2><span class="sub">today, live first</span><span class="note" id="cbLiveNote"></span></div>
+    <div id="cbLive"><div class="empty">Loading</div></div>
+  </section>
+  <section id="secCbStand" class="cbbsec">   <!-- v24: College Standings -->
+    <div class="head"><h2>Standings</h2><span class="sub">Big 12 first, then any conference</span></div>
+    <div id="cbStand"><div class="empty">Loading</div></div>
   </section>
 
   <section id="secStand">
@@ -1866,7 +1926,7 @@ function loadCbb(off){
     var l=(js.events||[]).map(cbbNorm).filter(Boolean);
     l.sort(function(x,y){ return (new Date(x.date)-new Date(y.date))||(cbbBest(x)-cbbBest(y)); });
     c.list=l; c.err=false;
-  }, function(){ c.err=true; }).then(function(){ c.at=Date.now(); c.busy=false; if(S.view==='sched'&&S.dayOff===off)renderSched(); if(S.view==='college'&&S.cdayOff===off)renderCollege(); });
+  }, function(){ c.err=true; }).then(function(){ c.at=Date.now(); c.busy=false; if(S.view==='sched'&&S.dayOff===off)renderSched(); if(S.view==='college')renderCollegeAll(); });   /* v24 */
 }
 function cbbStale(off){
   var c=S.cbb[off]; if(!c||(!c.list&&!c.err))return true;
@@ -1926,21 +1986,265 @@ function renderCollege(){
   $('cbbNote').textContent=fmtDay(dayShift(S.cdayOff).toISOString())+(c?' · '+c.list.length+' game'+(c.list.length===1?'':'s')+' · '+key+' with Texas Tech, the Top 25 or the Big 12':'')+' · men’s Division I, times Central';
   $('cbbList').innerHTML=cbbSched(S.cdayOff,true);
 }
-setInterval(function(){ if(S.view==='college'&&!document.hidden&&cbbStale(S.cdayOff))loadCbb(S.cdayOff); },20e3);   /* v23: the College page keeps itself fresh even when the NBA feed is down */
+setInterval(function(){ if(S.view==='college'&&S.cv==='sched'&&!document.hidden&&cbbStale(S.cdayOff))loadCbb(S.cdayOff); },20e3);   /* v23; v24: on College Schedule */
+/* v24 (job 1108-1222-3xn): College has the full set of pages the NBA side has. With College switched on, the tabs open
+   the college versions: Home, Season (Texas Tech), Top 25 (in the Race slot), Schedule, Scores and Standings.
+   Every feed is ESPN's public web API host, site.web.api.espn.com, the one the v23 College page already reads. */
+var CBBV2='https://site.web.api.espn.com/apis/v2/sports/basketball/mens-college-basketball', CBBC3='https://site.web.api.espn.com/apis/common/v3/sports/basketball/mens-college-basketball';
+var CV={home:'#college', season:'#college-season', race:'#college-race', sched:'#college-sched', live:'#college-live', stand:'#college-stand'};
+var CV_OF={}; Object.keys(CV).forEach(function(k){ CV_OF[CV[k]]=k; });
+var NBA_HASH={home:'#home', season:'#season', race:'#race', sched:'#sched', live:'#live', stand:'#stand'};
+/* conference ids from ESPN's standings feed, 8 Nov 2026; Big 12 first, then the power conferences, then A to Z */
+var CBB_CONFS=[['8','Big 12'],['23','SEC'],['7','Big Ten'],['2','ACC'],['4','Big East'],['1','America East'],['62','American'],['3','A-10'],['46','Atlantic Sun'],['5','Big Sky'],['6','Big South'],['9','Big West'],['10','CAA'],['11','CUSA'],['45','Horizon'],['12','Ivy'],['13','Metro Atlantic'],['14','MAC'],['16','MEAC'],['18','Missouri Valley'],['44','Mountain West'],['19','NEC'],['20','Ohio Valley'],['21','Pac-12'],['22','Patriot'],['24','SoCon'],['25','Southland'],['26','SWAC'],['49','Summit'],['27','Sun Belt'],['30','UAC'],['29','WCC']];
+S.cv='home'; S.cb={tt:null, rank:null, stand:{}, stats:null, roster:null, news:null, lead:{}, err:{}, busy:{}, at:{}};
+S.cb.poll='ap'; S.cb.conf='8'; S.cb.leadCat='pts'; S.cb.liveAll=false;
+function cbLoad(key,url,ttl,fn){
+  var c=S.cb; if(c.busy[key])return; if(c.at[key]&&Date.now()-c.at[key]<(c.err[key]?60e3:ttl))return;
+  c.busy[key]=true;
+  j(url).then(function(js){ fn(js); c.err[key]=false; }, function(){ c.err[key]=true; }).then(function(){ c.at[key]=Date.now(); c.busy[key]=false; if(S.view==='college')renderCollegeAll(); });
+}
+function cbState(key,have,what){   // the line shown while a feed loads or when it fails
+  if(have)return '';
+  return '<div class="empty">'+(S.cb.err[key]?esc(what)+' are not coming through from ESPN just now. Retrying.':'Loading '+esc(what.toLowerCase()))+'</div>';
+}
+function cbLogo(t){ return (t&&(t.logo||(t.logos&&t.logos[0]&&t.logos[0].href)))||''; }
+function cbImg(src){ return src?'<img src="'+esc(src)+'" alt="" loading="lazy" data-hide="1">':'<img alt="" style="visibility:hidden">'; }
+function cbScore(x){ if(!x)return null; if(typeof x==='object')x=x.displayValue!=null?x.displayValue:x.value; var n=parseFloat(x); return isNaN(n)?null:n; }
+/* Texas Tech's season, from the team schedule feed */
+function cbTeamNorm(ev){
+  var c=(ev.competitions||[])[0]; if(!c)return null;
+  var me=null, op=null; (c.competitors||[]).forEach(function(x){ if(String(x.id||(x.team||{}).id)===CBB_FAV)me=x; else op=x; });
+  if(!me||!op)return null;
+  var ty=(c.status||{}).type||{}, ot=op.team||{}, rk=op.curatedRank&&op.curatedRank.current, mrk=me.curatedRank&&me.curatedRank.current;
+  var tv=''; (c.broadcasts||[]).forEach(function(b){ if(!tv)tv=(b.media&&b.media.shortName)||(b.names&&b.names[0])||''; });
+  return {id:String(ev.id), date:ev.date, tbd:c.timeValid===false, state:ty.state||'pre', detail:ty.shortDetail||ty.detail||'', name:ty.name||'',
+    home:me.homeAway==='home', neutral:!!c.neutralSite, opp:{id:String(ot.id||''), nm:ot.shortDisplayName||ot.location||ot.displayName||'?', logo:cbLogo(ot), rk:(rk>=1&&rk<=25)?rk:0},
+    myRk:(mrk>=1&&mrk<=25)?mrk:0, us:cbScore(me.score), them:cbScore(op.score), win:me.winner===true, venue:(c.venue&&c.venue.fullName)||'', city:c.venue&&c.venue.address?[c.venue.address.city,c.venue.address.state].filter(Boolean).join(', '):'',
+    tv:tv, note:((c.notes||[])[0]||{}).headline||'', seasonType:(ev.seasonType||{}).type||2,
+    link:'https://www.espn.com/mens-college-basketball/game/_/gameId/'+encodeURIComponent(ev.id)};
+}
+function cbLoadTeam(){ cbLoad('tt',CBB+'/teams/'+CBB_FAV+'/schedule',10*60e3,function(js){
+  S.cb.tt={team:js.team||{}, games:(js.events||[]).map(cbTeamNorm).filter(Boolean).sort(function(a,b){ return new Date(a.date)-new Date(b.date); })};
+}); }
+function cbLoadRank(){ cbLoad('rank',CBB+'/rankings',30*60e3,function(js){ S.cb.rank=js; }); }
+function cbLoadStand(g){ cbLoad('st'+g,CBBV2+'/standings?group='+g,10*60e3,function(js){ S.cb.stand[g]=js; }); }
+function cbLoadStats(){ cbLoad('stats',CBB+'/teams/'+CBB_FAV+'/athletes/statistics',30*60e3,function(js){ S.cb.stats=js; }); }
+function cbLoadRoster(){ cbLoad('roster',CBB+'/teams/'+CBB_FAV+'/roster',60*60e3,function(js){ S.cb.roster=js; }); }
+function cbLoadNews(){ cbLoad('news',CBB+'/news?team='+CBB_FAV+'&limit=8',15*60e3,function(js){ S.cb.news=js; }); }
+var CB_LEAD={pts:['Points','offensive.avgPoints','avgPoints','PPG'], reb:['Rebounds','general.avgRebounds','avgRebounds','RPG'], ast:['Assists','offensive.avgAssists','avgAssists','APG']};
+function cbLoadLead(k){ cbLoad('ld'+k,CBBC3+'/statistics/byathlete?limit=10&qualified=true&sort='+CB_LEAD[k][1]+':desc',30*60e3,function(js){ S.cb.lead[k]=js; }); }
+/* records and helpers */
+function cbRec(gs){ var w=0,l=0,pf=0,pa=0; gs.forEach(function(g){ if(g.state!=='post'||g.us==null||g.them==null)return; if(g.win)w++; else l++; pf+=g.us; pa+=g.them; }); return {w:w,l:l,gp:w+l,pf:pf,pa:pa,txt:w+'-'+l}; }
+function cbStreak(gs){ var d=gs.filter(function(g){ return g.state==='post'; }), n=0, w=null; for(var i=d.length-1;i>=0;i--){ if(w===null)w=d[i].win; if(d[i].win!==w)break; n++; } return n?(w?'W':'L')+n:'-'; }
+function cbBig12Ids(){ var s=S.cb.stand['8'], ids={}; if(s)cbEntries(s).forEach(function(e){ ids[String((e.team||{}).id)]=1; }); return ids; }
+function cbEntries(js){ var e=(js.standings&&js.standings.entries)||[]; if(!e.length)(js.children||[]).forEach(function(c){ e=e.concat((c.standings&&c.standings.entries)||[]); }); return e; }
+function cbStat(e,n){ var s=(e.stats||[]).filter(function(x){ return x.name===n||x.type===n||x.displayName===n; })[0]; return s||{}; }
+function cbWL(t){ var m=String(t||'').match(/^(\d+)-(\d+)/); return m?[+m[1],+m[2]]:[0,0]; }
+function cbPct(wl){ return wl[0]+wl[1]?wl[0]/(wl[0]+wl[1]):0; }
+function cbConfRows(js){
+  return cbEntries(js).map(function(e){
+    var t=e.team||{}, ov=cbStat(e,'overall').displayValue||cbStat(e,'total').displayValue||((cbStat(e,'wins').displayValue||0)+'-'+(cbStat(e,'losses').displayValue||0)), cf=cbStat(e,'vs. Conf.').displayValue||'0-0';
+    return {id:String(t.id||''), nm:t.shortDisplayName||t.location||'?', logo:cbLogo(t), ov:ov, cf:cf, home:cbStat(e,'Home').displayValue||'-', road:cbStat(e,'Road').displayValue||'-',
+      strk:cbStat(e,'streak').displayValue||'-', ppg:cbStat(e,'avgPointsFor').displayValue||'-', opp:cbStat(e,'avgPointsAgainst').displayValue||'-', seed:+(cbStat(e,'playoffSeed').value||0)};
+  }).sort(function(a,b){ var A=cbWL(a.cf),B=cbWL(b.cf),C=cbWL(a.ov),D=cbWL(b.ov);
+    return (cbPct(B)-cbPct(A))||(B[0]-A[0])||(cbPct(D)-cbPct(C))||(D[0]-C[0])||(a.seed||99)-(b.seed||99)||a.nm.localeCompare(b.nm); });
+}
+function cbRanks(){   // {teamId: AP rank} from the poll, for the tags in tables
+  var m={}, p=S.cb.rank&&(S.cb.rank.rankings||[]).filter(function(r){ return r.type==='ap'; })[0]; if(p)(p.ranks||[]).forEach(function(r){ m[String((r.team||{}).id)]=r.current; }); return m;
+}
+function cbConfTable(rows,title,sub,full){
+  var ap=cbRanks();
+  var h='<div class="tb"><div class="tbh"><h3>'+esc(title)+'</h3><span>'+esc(sub||'')+'</span></div><div class="scrollx"><table class="st"><thead><tr><th>Team</th><th>Conf</th><th>All</th>'+
+    (full?'<th>Home</th><th>Road</th><th>Strk</th><th>PPG</th><th>Opp</th>':'')+'</tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    var st=String(r.strk||'');
+    h+='<tr class="'+(r.id===CBB_FAV?'fav':'')+'"><td><div class="tm"><span class="sdb">'+(i+1)+'</span>'+cbImg(r.logo)+(ap[r.id]?'<span class="rk">'+ap[r.id]+'</span>':'')+esc(r.nm)+'</div></td><td class="rec">'+esc(r.cf)+'</td><td>'+esc(r.ov)+'</td>'+
+      (full?'<td>'+esc(r.home)+'</td><td>'+esc(r.road)+'</td><td class="str '+(/^W/.test(st)?'w':/^L/.test(st)?'l':'')+'">'+esc(st)+'</td><td>'+esc(r.ppg)+'</td><td>'+esc(r.opp)+'</td>':'')+'</tr>';
+  });
+  return h+'</tbody></table></div></div>';
+}
+function cbGameLine(g,b12){   // one row of Texas Tech's schedule
+  var res=g.state==='post'&&g.us!=null?'<b class="'+(g.win?'w':'l')+'">'+(g.win?'W':'L')+'</b> '+g.us+'-'+g.them:g.state==='in'?'<b class="lv">Live</b> '+(g.us==null?'':g.us+'-'+g.them):esc(g.tbd?'TBD':fmtTime(g.date))+(g.tv?' &middot; '+esc(g.tv):'');
+  var tag=b12&&b12[g.opp.id]?'<span class="cbtag">Big 12</span>':g.seasonType===3?'<span class="cbtag">NCAA</span>':'';
+  return '<a class="cbg'+(g.state==='in'?' live':'')+'" href="'+esc(g.link)+'" target="_blank" rel="noopener" title="Open on ESPN"><span class="d">'+esc(fmtDay(g.date))+'</span><span class="va">'+(g.neutral?'vs':g.home?'vs':'at')+'</span>'+
+    cbImg(g.opp.logo)+'<span class="o">'+(g.opp.rk?'<span class="rk">'+g.opp.rk+'</span>':'')+esc(g.opp.nm)+tag+'</span><span class="r">'+res+'</span></a>';
+}
+function cbHero(){   // Texas Tech's game now, next or last
+  var tt=S.cb.tt; if(!tt)return cbState('tt',false,'The Texas Tech schedule');
+  var gs=tt.games, live=gs.filter(function(g){ return g.state==='in'; })[0], up=gs.filter(function(g){ return g.state==='pre'; })[0], last=gs.filter(function(g){ return g.state==='post'; }).slice(-1)[0];
+  var g=live||up||last; if(!g)return '<div class="empty">No Texas Tech games listed yet.</div>';
+  var lab=live?'Live now':up?'Next up':'Last game', R=cbRec(gs);
+  var line=live?'<b class="lv">'+esc(g.detail||'Live')+'</b> Texas Tech '+(g.us==null?'':g.us)+', '+esc(g.opp.nm)+' '+(g.them==null?'':g.them):
+    up?esc(fmtDay(g.date)+', '+(g.tbd?'time TBD':fmtTime(g.date)))+(g.tv?' &middot; '+esc(g.tv):''):'<b class="'+(g.win?'w':'l')+'">'+(g.win?'Won':'Lost')+'</b> '+g.us+'-'+g.them;
+  var where=(g.venue?g.venue:'')+(g.city?(g.venue?', ':'')+g.city:'');
+  var body='<a class="nx cbnx" href="'+esc(g.link)+'" target="_blank" rel="noopener">'+cbImg(g.opp.logo)+'<div style="min-width:0"><div class="t"><small>'+(g.neutral?'vs':g.home?'vs':'at')+'</small>'+(g.opp.rk?'<span class="rk">'+g.opp.rk+'</span>':'')+esc(g.opp.nm)+'</div>'+
+    '<div class="s">'+line+'</div>'+(where?'<div class="s">'+esc(where)+(g.note?' &middot; '+esc(g.note):'')+'</div>':'')+'</div></a>';
+  if(up&&last&&!live)body+='<div class="sn-note">Last time out: '+(last.win?'won':'lost')+' '+last.us+'-'+last.them+' '+(last.home||last.neutral?'vs ':'at ')+esc(last.opp.nm)+', '+esc(fmtDay(last.date))+'.</div>';
+  return snCard(lab,body,'','Texas Tech '+R.txt);
+}
+function cbSummary(){
+  var tt=S.cb.tt; if(!tt)return '';
+  var gs=tt.games, R=cbRec(gs), rk=cbRanks()[CBB_FAV], cf=S.cb.stand['8']?cbConfRows(S.cb.stand['8']):null, pos=cf?cf.map(function(r){return r.id}).indexOf(CBB_FAV)+1:0;
+  var bits=[R.txt+' overall'];
+  if(rk)bits.push('No. '+rk+' in the AP poll'); else if(S.cb.rank)bits.push('not ranked in the AP poll');
+  if(pos)bits.push(ord(pos)+' in the Big 12'+(cf[pos-1].cf==='0-0'?' (league play starts later)':''));
+  bits.push('streak '+cbStreak(gs));
+  if(R.gp)bits.push(fixed(R.pf/R.gp)+' scored, '+fixed(R.pa/R.gp)+' allowed a game');
+  return '<div class="cbsum"><img src="https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png" alt=""><div><b>Texas Tech Red Raiders</b><span>'+esc(bits.join(' · '))+'</span></div></div>';
+}
+function fixed(n){ return (Math.round(n*10)/10).toFixed(1); }
+/* ---------- College Home ---------- */
+function cbHome(){
+  cbLoadTeam(); cbLoadRank(); cbLoadStand('8'); cbLoadNews(); if(cbbStale(0))loadCbb(0);
+  var c=cbbDay(0), key=c?c.list.filter(function(g){ return cbbKind(g)<3; }):[], rk={'in':0,pre:1,post:2};
+  key.sort(function(x,y){ return (cbbKind(x)-cbbKind(y))||(rk[x.state]-rk[y.state])||(new Date(x.date)-new Date(y.date)); });
+  var live=c?c.list.filter(function(g){ return g.state==='in'; }).length:0;
+  $('cbHmNote').textContent=fmtDay(new Date().toISOString())+(c?' · '+c.list.length+' Division I game'+(c.list.length===1?'':'s')+' today'+(live?', '+live+' live':''):'');
+  var today=!c?cbbSched(0,true):key.length?'<div class="games">'+key.slice(0,8).map(cbbCard).join('')+'</div>'+(key.length>8?'<a class="cbbmore" href="#college-sched">'+(key.length-8)+' more key games on the Schedule</a>':''):'<div class="empty">No games for Texas Tech, the Top 25 or the Big 12 today.</div>';
+  var b12=S.cb.stand['8']?cbConfTable(cbConfRows(S.cb.stand['8']).slice(0,16),'Big 12','conference record first','')+'<a class="cbbmore" href="#college-stand">Every conference</a>':cbState('st8',false,'The Big 12 standings');
+  var poll=cbPollTable(10)+(S.cb.rank?'<a class="cbbmore" href="#college-race">The full Top 25 and the coaches poll</a>':'');
+  var nw=S.cb.news?(S.cb.news.articles||[]).slice(0,5).map(function(a){ var l=(a.links&&a.links.web&&a.links.web.href)||''; return '<a class="cbnews" href="'+esc(l)+'" target="_blank" rel="noopener"><b>'+esc(a.headline||'')+'</b><span>'+esc(a.published?fmtDay(a.published):'')+'</span></a>'; }).join('')||'<div class="empty">No Texas Tech stories just now.</div>':cbState('news',false,'Texas Tech stories');
+  $('cbHome').innerHTML=cbSummary()+'<div class="cg">'+'<div class="sn-col">'+cbHero()+snCard('Today','<div class="cbin">'+today+'</div>','','Texas Tech, Top 25, Big 12')+'</div>'+
+    '<div class="sn-col">'+snCard('AP Top 10','<div class="cbin">'+poll+'</div>')+'<div>'+b12+'</div>'+snCard('Texas Tech news','<div class="cbin">'+nw+'</div>','','from ESPN')+'</div></div>';
+}
+/* ---------- College Season: Texas Tech ---------- */
+function cbFlat(cats){ var m={}; (cats||[]).forEach(function(c){ (c.stats||[]).forEach(function(s){ m[s.name]=s; }); }); return m; }
+function cbPlayers(){
+  var st=S.cb.stats, ro=S.cb.roster, byId={};
+  if(ro)(ro.athletes||[]).forEach(function(a){ byId[a.id]={id:a.id, nm:a.displayName||a.fullName, pos:(a.position||{}).abbreviation||'', yr:(a.experience||{}).abbreviation||'', ht:a.displayHeight||'', num:a.jersey||'', s:{}}; });
+  if(st)(st.results||[]).forEach(function(cat){ (cat.leaders||[]).forEach(function(l){ var a=l.athlete||{}; var p=byId[a.id]||(byId[a.id]={id:a.id, nm:a.displayName, pos:'', yr:'', ht:'', num:'', s:{}}); var f=cbFlat(l.statistics); Object.keys(f).forEach(function(k){ p.s[k]=f[k]; }); }); });
+  return Object.keys(byId).map(function(k){ return byId[k]; });
+}
+function cbSeason(){
+  cbLoadTeam(); cbLoadRank(); cbLoadStand('8'); cbLoadStats(); cbLoadRoster(); cbLoadLead(S.cb.leadCat);
+  var tt=S.cb.tt, b12=cbBig12Ids(), h=cbSummary();
+  /* results and schedule */
+  var sch=tt?'<div class="cbsched">'+tt.games.map(function(g){ return cbGameLine(g,b12); }).join('')+'</div>':cbState('tt',false,'The Texas Tech schedule');
+  /* splits */
+  var spl='';
+  if(tt){
+    var gs=tt.games, rows=[['Overall',gs],['Home',gs.filter(function(g){ return g.home&&!g.neutral; })],['Away',gs.filter(function(g){ return !g.home&&!g.neutral; })],['Neutral site',gs.filter(function(g){ return g.neutral; })],
+      ['Big 12',gs.filter(function(g){ return b12[g.opp.id]; })],['Non-conference',gs.filter(function(g){ return !b12[g.opp.id]; })],['vs AP Top 25',gs.filter(function(g){ return g.opp.rk; })]];
+    spl='<div class="scrollx"><table class="st"><thead><tr><th>Split</th><th>W-L</th><th>Left</th><th>PPG</th><th>Opp</th></tr></thead><tbody>'+rows.map(function(r){ var R=cbRec(r[1]), left=r[1].filter(function(g){ return g.state!=='post'; }).length;
+      return '<tr><td>'+esc(r[0])+'</td><td class="rec">'+R.txt+'</td><td>'+left+'</td><td>'+(R.gp?fixed(R.pf/R.gp):'-')+'</td><td>'+(R.gp?fixed(R.pa/R.gp):'-')+'</td></tr>'; }).join('')+'</tbody></table></div>'+
+      '<div class="sn-note">Big 12 opponents are read from the Big 12 standings feed. Ranks are the AP rank at the time of each game.</div>';
+  }
+  /* team stats with the national rank ESPN gives */
+  var ts='';
+  if(S.cb.stats&&S.cb.stats.teamTotals){
+    var f=cbFlat(S.cb.stats.teamTotals), pick=[['avgPoints','Points a game'],['avgRebounds','Rebounds'],['avgAssists','Assists'],['fieldGoalPct','Field goal %'],['threePointFieldGoalPct','Three point %'],['freeThrowPct','Free throw %'],['avgSteals','Steals'],['avgBlocks','Blocks'],['avgTurnovers','Turnovers']];
+    ts='<div class="scrollx"><table class="st"><thead><tr><th>Team stat</th><th>Value</th><th>Nation</th></tr></thead><tbody>'+pick.filter(function(p){ return f[p[0]]; }).map(function(p){ var s=f[p[0]]; return '<tr><td>'+esc(p[1])+'</td><td class="rec">'+esc(s.displayValue)+'</td><td>'+esc(s.rankDisplayValue||(s.rank?ord(s.rank):'-'))+'</td></tr>'; }).join('')+'</tbody></table></div><div class="sn-note">Nation: rank among all Division I teams, from ESPN.</div>';
+  } else ts=cbState('stats',false,'Team stats');
+  /* roster with per game numbers */
+  var pl=cbPlayers().filter(function(p){ return p.nm; }), rt='';
+  if(pl.length){
+    pl.sort(function(a,b){ return (num(b.s.avgPoints&&b.s.avgPoints.value)||-1)-(num(a.s.avgPoints&&a.s.avgPoints.value)||-1)||a.nm.localeCompare(b.nm); });
+    var dv=function(p,k){ return p.s[k]?esc(p.s[k].displayValue):'-'; };
+    rt='<div class="scrollx"><table class="st"><thead><tr><th>Player</th><th>GP</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>FG%</th><th>3P%</th></tr></thead><tbody>'+pl.map(function(p){
+      return '<tr><td><div class="tm"><span class="sdb">'+esc(p.num)+'</span>'+esc(p.nm)+' <i>'+esc([p.pos,p.yr,p.ht].filter(Boolean).join(' '))+'</i></div></td><td>'+dv(p,'gamesPlayed')+'</td><td>'+dv(p,'avgMinutes')+'</td><td class="rec">'+dv(p,'avgPoints')+'</td><td>'+dv(p,'avgRebounds')+'</td><td>'+dv(p,'avgAssists')+'</td><td>'+dv(p,'fieldGoalPct')+'</td><td>'+dv(p,'threePointFieldGoalPct')+'</td></tr>'; }).join('')+'</tbody></table></div>'+
+      (S.cb.roster&&S.cb.roster.coach&&S.cb.roster.coach[0]?'<div class="sn-note">Head coach '+esc(S.cb.roster.coach[0].firstName+' '+S.cb.roster.coach[0].lastName)+'. Per game numbers; a dash means no minutes yet.</div>':'');
+  } else rt=cbState(S.cb.err.roster?'roster':'stats',false,'The roster');
+  /* national leaders */
+  var lk=S.cb.leadCat, ld=S.cb.lead[lk], seg='<span class="seg">'+Object.keys(CB_LEAD).map(function(k){ return '<button data-cblead="'+k+'" class="'+(k===lk?'on':'')+'">'+CB_LEAD[k][0]+'</button>'; }).join('')+'</span>', lt='';
+  if(ld){
+    var cat=CB_LEAD[lk][1].split('.')[0], nm=CB_LEAD[lk][2], ci=(ld.categories||[]).filter(function(c){ return c.name===cat; })[0], ix=ci?(ci.names||[]).indexOf(nm):-1;
+    lt='<div class="scrollx"><table class="st"><thead><tr><th>Player</th><th>Team</th><th>'+CB_LEAD[lk][3]+'</th></tr></thead><tbody>'+(ld.athletes||[]).map(function(a,i){ var at=a.athlete||{}, c=(a.categories||[]).filter(function(x){ return x.name===cat; })[0], v=c&&ix>=0?c.values[ix]:null;
+      return '<tr class="'+(String(at.teamId)===CBB_FAV?'fav':'')+'"><td><div class="tm"><span class="sdb">'+(i+1)+'</span>'+esc(at.displayName||'')+'</div></td><td>'+esc(at.teamShortName||at.teamName||'')+'</td><td class="rec">'+(v==null?'-':fixed(v))+'</td></tr>'; }).join('')+'</tbody></table></div><div class="sn-note">All of Division I, qualified players, per game, from ESPN.</div>';
+  } else lt=cbState('ld'+lk,false,'The national leaders');
+  $('cbSeason').innerHTML=h+'<div class="cg"><div class="sn-col">'+snCard('Results and schedule',sch,'',tt?tt.games.length+' games':'')+'</div><div class="sn-col">'+snCard('Splits',spl||cbState('tt',false,'The splits'))+snCard('Team stats',ts)+'</div></div>'+
+    '<div class="cg"><div class="sn-col">'+snCard('Roster',rt,'','by points a game')+'</div><div class="sn-col">'+snCard('National leaders',lt,seg)+'</div></div>';
+}
+/* ---------- College Top 25 (the Race slot) ---------- */
+function cbPoll(t){ return S.cb.rank&&(S.cb.rank.rankings||[]).filter(function(r){ return r.type===t; })[0]; }
+function cbPollTable(n,t){
+  var p=cbPoll(t||'ap'); if(!p)return cbState('rank',false,'The polls');
+  var b12=cbBig12Ids(), rows=(p.ranks||[]).slice(0,n||25);
+  return '<div class="scrollx"><table class="st"><thead><tr><th>Team</th><th>Record</th><th>Points</th><th>Last</th></tr></thead><tbody>'+rows.map(function(r){ var tm=r.team||{}, id=String(tm.id||''), mv=r.previous&&r.previous!==r.current?(r.previous>r.current?'<span class="up">+'+(r.previous-r.current)+'</span>':'<span class="dn">-'+(r.current-r.previous)+'</span>'):'';
+    return '<tr class="'+(id===CBB_FAV?'fav':'')+'"><td><div class="tm"><span class="sdb">'+r.current+'</span>'+cbImg(cbLogo(tm))+esc(tm.location||tm.nickname||tm.name||'')+(b12[id]?' <i>Big 12</i>':'')+'</div></td><td>'+esc(r.recordSummary||'-')+'</td><td>'+esc(r.points!=null?r.points:'-')+(r.firstPlaceVotes?' <i>('+r.firstPlaceVotes+')</i>':'')+'</td><td>'+(r.previous?r.previous+' '+mv:'-')+'</td></tr>'; }).join('')+'</tbody></table></div>';
+}
+function cbRace(){
+  cbLoadRank(); cbLoadStand('8'); cbLoadTeam();
+  var t=S.cb.poll, p=cbPoll(t), seg='<span class="seg">'+[['ap','AP'],['usa','Coaches']].map(function(x){ return '<button data-cbpoll="'+x[0]+'" class="'+(x[0]===t?'on':'')+'">'+x[1]+'</button>'; }).join('')+'</span>';
+  var sub=p?(p.headline||p.name||'')+(p.date?' · '+fmtDay(p.date):''):'';
+  var oth=p&&(p.others||[]).length?'<div class="sn-note" style="margin-top:8px"><b>Also receiving votes:</b> '+(p.others||[]).map(function(r){ return esc(((r.team||{}).location||'')+' '+r.points); }).join(', ')+'</div>':'';
+  var drop=p&&(p.droppedOut||[]).length?'<div class="sn-note"><b>Dropped out:</b> '+(p.droppedOut||[]).map(function(r){ return esc((r.team||{}).location||''); }).join(', ')+'</div>':'';
+  /* the Big 12 in the poll, and the ranked teams still on Texas Tech's schedule */
+  var b12=cbBig12Ids(), inPoll=p?(p.ranks||[]).filter(function(r){ return b12[String((r.team||{}).id)]; }):[];
+  var bx=p&&S.cb.stand['8']?'<div class="cbin">'+(inPoll.length?inPoll.map(function(r){ return '<div class="cbrow'+(String(r.team.id)===CBB_FAV?' fav':'')+'"><span class="rk">'+r.current+'</span>'+cbImg(cbLogo(r.team))+esc(r.team.location)+'</div>'; }).join(''):'<div class="empty">No Big 12 team in this poll.</div>')+
+    '<div class="sn-note">'+inPoll.length+' of 16 Big 12 teams are in the '+(t==='ap'?'AP':'coaches')+' Top 25.</div></div>':cbState('st8',false,'The Big 12 teams');
+  var tt=S.cb.tt, ahead=tt?tt.games.filter(function(g){ return g.state!=='post'&&g.opp.rk; }):[];
+  var rx=tt?'<div class="cbsched">'+(ahead.length?ahead.map(function(g){ return cbGameLine(g,b12); }).join(''):'<div class="empty">No ranked teams left on the schedule.</div>')+'</div><div class="sn-note">Ranks are the current AP rank as ESPN lists it on the schedule.</div>':cbState('tt',false,'The Texas Tech schedule');
+  var march='<div class="cbin cbtxt"><p>College basketball has no standings race like the NBA&rsquo;s, so there is no odds table or what if here. Sixty-eight teams make the NCAA tournament in March: every conference tournament champion gets in, and a committee picks and seeds the rest.</p>'+
+    '<p>The committee&rsquo;s main sorting tool is the NET ranking. NCAA.com publishes it, but it has no public feed this page can read, so it is not shown. There is no free bracketology feed either, so no projected seed is shown.</p>'+
+    '<p><a href="https://www.ncaa.com/rankings/basketball-men/d1/ncaa-mens-basketball-net-rankings" target="_blank" rel="noopener">NET on NCAA.com</a> &middot; <a href="https://www.espn.com/mens-college-basketball/bracketology" target="_blank" rel="noopener">ESPN bracketology</a></p></div>';
+  $('cbRace').innerHTML=cbSummary()+'<div class="cg"><div class="sn-col">'+snCard(t==='ap'?'AP Top 25':'Coaches Poll',cbPollTable(25,t)+oth+drop,seg,esc(sub))+'</div>'+
+    '<div class="sn-col">'+snCard('Big 12 in the poll',bx)+snCard('Ranked teams ahead for Texas Tech',rx)+snCard('The road to March',march)+'</div></div>';
+}
+/* ---------- College Scores ---------- */
+function cbLive(){
+  if(cbbStale(0))loadCbb(0);
+  var c=cbbDay(0), h='';
+  if(!c){ $('cbLive').innerHTML=cbbSched(0,true); return; }
+  var all=S.cb.liveAll, l=c.list.filter(function(g){ return all||cbbKind(g)<3; }), rk={'in':0,pre:1,post:2};
+  var by=function(st){ return l.filter(function(g){ return g.state===st; }).sort(function(x,y){ return (cbbKind(x)-cbbKind(y))||(new Date(x.date)-new Date(y.date)); }); };
+  var lv=by('in'), fn=by('post'), up=by('pre'), n={'in':0,pre:0,post:0}; c.list.forEach(function(g){ n[g.state]++; });
+  function blk(t,sub,x){ return x.length?'<div class="sblk"><div class="sh"><h3>'+esc(t)+'</h3><span>'+sub+'</span></div><div class="games">'+x.map(cbbCard).join('')+'</div></div>':''; }
+  h+='<div class="cbcount"><span class="'+(n['in']?'lv':'')+'">'+n['in']+' live</span><span>'+n.post+' final</span><span>'+n.pre+' to come</span><span class="seg"><button data-cblive="0" class="'+(all?'':'on')+'">Key games</button><button data-cblive="1" class="'+(all?'on':'')+'">All of Division I</button></span></div>';
+  h+=blk('Live now','updates every 20 seconds',lv)+blk('Final','',fn)+blk('Still to come','tip-off order',up);
+  if(!l.length)h+='<div class="empty">'+(all?'No college games today.':'No games for Texas Tech, the Top 25 or the Big 12 today. Switch to All of Division I for the rest.')+'</div>';
+  $('cbLiveNote').textContent=fmtDay(new Date().toISOString())+' · men’s Division I · times Central';
+  $('cbLive').innerHTML=h;
+}
+/* ---------- College Standings ---------- */
+function cbStand(){
+  cbLoadStand('8'); cbLoadRank(); if(S.cb.conf!=='8')cbLoadStand(S.cb.conf);
+  var h=S.cb.stand['8']?cbConfTable(cbConfRows(S.cb.stand['8']),'Big 12','Texas Tech’s conference','full'):cbState('st8',false,'The Big 12 standings');
+  var opts=CBB_CONFS.filter(function(c){ return c[0]!=='8'; }).map(function(c){ return '<option value="'+c[0]+'"'+(c[0]===S.cb.conf?' selected':'')+'>'+esc(c[1])+'</option>'; }).join('');
+  h+='<div class="head" style="margin-top:16px"><h2 style="font-size:18px">Other conferences</h2><select class="flt cbconf" id="cbConf" aria-label="Conference"><option value="8">Pick a conference</option>'+opts+'</select></div>';
+  if(S.cb.conf!=='8'){ var nm=(CBB_CONFS.filter(function(c){ return c[0]===S.cb.conf; })[0]||[])[1]||''; h+=S.cb.stand[S.cb.conf]?cbConfTable(cbConfRows(S.cb.stand[S.cb.conf]),nm,'','full'):cbState('st'+S.cb.conf,false,'The '+nm+' standings'); }
+  h+='<p class="legend" style="display:block">Sorted on conference record, then overall record, so early in the season, before league play, it follows the overall record. Each conference tournament in March decides an automatic NCAA bid; seeds for it come from these tables and each league&rsquo;s own tiebreakers, which are not applied here.</p>';
+  $('cbStand').innerHTML=h;
+}
+function cbBar(){   /* v24: the bar's live count, college games */
+  var c=cbbDay(0), n=c?c.list.filter(function(g){ return g.state==='in'; }).length:0;
+  $('cbDot').className='dot'+(n?' on':''); $('cbSt').className='st'+(n?' go':''); $('cbStText').textContent=c?(n?n+' live':'College scores'):'College';
+}
+function renderCollegeAll(){
+  if(S.view!=='college')return;
+  var v=S.cv;
+  cbBar();
+  if(v==='home')cbHome(); else if(v==='season')cbSeason(); else if(v==='race')cbRace(); else if(v==='sched')renderCollege(); else if(v==='live')cbLive(); else if(v==='stand')cbStand();
+}
+function cbClick(t){
+  var b;
+  if((b=t.closest('[data-cbpoll]'))){ S.cb.poll=b.dataset.cbpoll; cbRace(); return true; }
+  if((b=t.closest('[data-cblead]'))){ S.cb.leadCat=b.dataset.cblead; cbSeason(); return true; }
+  if((b=t.closest('[data-cblive]'))){ S.cb.liveAll=b.dataset.cblive==='1'; cbLive(); return true; }
+  return false;
+}
+document.addEventListener('change',function(e){ if(e.target&&e.target.id==='cbConf'){ S.cb.conf=e.target.value; cbStand(); } });
+setInterval(function(){ if(S.view==='college'&&!document.hidden&&(S.cv==='home'||S.cv==='live')&&cbbStale(0))loadCbb(0); },20e3);   /* v24: Home and Scores keep today's games fresh */   /* v23: the College page keeps itself fresh even when the NBA feed is down */
 
 /* ---------- routing ---------- */
 function setView(v){
-  S.view=v; document.body.className='v-'+v;
-  [].forEach.call(document.querySelectorAll('#nav a'),function(a){ a.className=a.dataset.v===v?'on':'';   /* v18: no tab lit inside the game center */ });
+  S.view=v; document.body.className='v-'+v+(v==='college'?' cv-'+S.cv:'');
+  var col=v==='college';
+  [].forEach.call(document.querySelectorAll('#nav a'),function(a){   /* v18: no tab lit inside the game center; v24: with College on, the tabs open the college pages */
+    var k=a.dataset.v; a.className=(col?S.cv:v)===k?'on':'';
+    a.setAttribute('href',col?CV[k]:NBA_HASH[k]);
+    if(k==='race'){ if(!a.dataset.nba)a.dataset.nba=a.innerHTML; a.innerHTML=col?'Top 25':a.dataset.nba; }
+  });
   [].forEach.call(document.querySelectorAll('#lgSeg button'),function(b){ b.className=(b.dataset.league==='cbb')===(v==='college')?'on':''; });   /* v23 */
 }
 function route(){
   var h=location.hash||('#'+snDefault()), m=h.match(/^#game-(\d+)/);
   if(m){ if(!S.gcTab)S.gcTab='live'; if(!S.gc||S.gc.id!==m[1])openGame(m[1]); setView('game'); scrollTo(0,0); return; }
   if(S.gc){ clearTimeout(S.gc.timer); S.gc=null; }
-  var v=({'#college':'college','#sched':'sched','#live':'live','#stand':'stand','#season':'season','#race':'race','#home':'home'})[h]||'home';
+  var cv=CV_OF[h], pcv=S.cv;   /* v24: #college is College Home; #college-season, -race, -sched, -live and -stand are the other college pages */
+  var v=cv?'college':({'#sched':'sched','#live':'live','#stand':'stand','#season':'season','#race':'race','#home':'home'})[h]||'home';
+  if(cv)S.cv=cv;
   var pv=S.view; S.from=h; S.gcTab=v; if(v!=='college')S.nbaFrom=h; setView(v); renderAll();
-  if(v==='college'&&pv!=='college')scrollTo(0,0);   /* v23 */
+  if(v==='college'&&(pv!=='college'||pcv!==cv))scrollTo(0,0);   /* v23; v24: each college page opens at the top */
   if(v==='sched'&&pv&&pv!=='sched'&&pv!=='game')scrollTo(0,0);   /* v22: opening Schedule from another tab starts at the top; back from a game center and a re-tap keep their place */
 }
 function goGame(id){ S.back=location.hash||('#'+snDefault()); location.hash='#game-'+id; }
@@ -2602,7 +2906,7 @@ function renderAll(){
   else if(v==='home'){ renderHome(); }
   else if(v==='live'){ renderBoard(); }
   else if(v==='sched'){ renderSched(); }
-  else if(v==='college'){ renderCollege(); }   /* v23 */
+  else if(v==='college'){ renderCollegeAll(); cbBar(); }   /* v23; v24: the open college page */
   else if(v==='stand'){ renderStandings(); }
   else if(v==='season'){ renderSeason(); }
   if(v!=='race')renderOdds();
@@ -2813,7 +3117,8 @@ function boot(){
   document.addEventListener('click',function(e){
     var t=e.target;
     if(snClick(e))return;
-    var b=t.closest('[data-league],[data-lgo]'); if(b){ var lg=b.dataset.league||b.dataset.lgo; if(lg==='cbb'){ if(S.view!=='college')location.hash='#college'; } else if(S.view==='college')location.hash=S.nbaFrom&&S.nbaFrom!=='#college'?S.nbaFrom:'#home'; return; }   /* v23: NBA | College switch */
+    var b=t.closest('[data-league],[data-lgo]'); if(b){ var lg=b.dataset.league||b.dataset.lgo; if(lg==='cbb'){ if(S.view!=='college')location.hash=CV[S.view]||'#college'; } else if(S.view==='college')location.hash=NBA_HASH[S.cv]||'#home'; return; }   /* v23: NBA | College switch; v24: it keeps the tab, NBA Season to College Season and back */
+    if(cbClick(t))return;   /* v24 */
     b=t.closest('[data-cday]'); if(b){ S.cdayOff=+b.dataset.cday; renderCollege(); return; }   /* v23 */
     b=t.closest('[data-day]'); if(b){ S.dayOff=+b.dataset.day; renderSched(); return; }
     b=t.closest("[data-cbball]"); if(b){ if(S.view==='college'){ S.cbbAllP[S.cdayOff]=b.dataset.cbball==="1"; renderCollege(); } else { S.cbbAll[S.dayOff]=b.dataset.cbball==="1"; renderSched(); } return; }   /* v21 */
