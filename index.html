@@ -245,7 +245,7 @@ body:not(.v-college) #cbSt{display:none!important}
 .cbin .games{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
 a.cbnx{color:inherit; text-decoration:none}
 .cbsched{display:flex; flex-direction:column; min-width:0}
-a.cbg{display:grid; grid-template-columns:62px 20px 22px minmax(0,1fr) auto; align-items:center; gap:7px; padding:7px 2px; border-bottom:1px solid #1a1f29; color:inherit; text-decoration:none; font-size:13px}
+a.cbg{display:grid; grid-template-columns:76px 20px 22px minmax(0,1fr) auto; align-items:center; gap:7px; padding:7px 2px; border-bottom:1px solid #1a1f29; color:inherit; text-decoration:none; font-size:13px}
 a.cbg:last-child{border-bottom:none}
 a.cbg:hover{background:rgba(255,255,255,.03)}
 a.cbg.live{background:rgba(255,59,78,.07)}
@@ -269,7 +269,8 @@ a.cbnews:hover b{text-decoration:underline}
 .cbbsec table.st .up{color:var(--good); font-size:11px} .cbbsec table.st .dn{color:var(--bad); font-size:11px}
 .cbbsec table.st .tm img{width:20px; height:20px}
 .flt.cbconf{margin-left:auto}
-@media (max-width:640px){ .cbcount .seg{margin-left:0} .cbsum{padding:9px 11px} a.cbg{grid-template-columns:52px 18px 20px minmax(0,1fr) auto; gap:5px; font-size:12.5px} }
+.cbbsec table.st :is(th,td){display:table-cell!important}   /* v24: the NBA tables drop columns 4 and 8 in narrow cards; the college tables keep every column and scroll inside the card */
+@media (max-width:640px){ .cbcount .seg{margin-left:0} .cbsum{padding:9px 11px} a.cbg{grid-template-columns:70px 18px 20px minmax(0,1fr) auto; gap:5px; font-size:12.5px} }
 .bar .seg.lg{flex-shrink:0; padding:2px}
 .bar .seg.lg button{font-size:12px; padding:5px 11px}
 .bar .seg.lg button.on{background:#cc0000}
@@ -2087,7 +2088,7 @@ function cbSummary(){
   var gs=tt.games, R=cbRec(gs), rk=cbRanks()[CBB_FAV], cf=S.cb.stand['8']?cbConfRows(S.cb.stand['8']):null, pos=cf?cf.map(function(r){return r.id}).indexOf(CBB_FAV)+1:0;
   var bits=[R.txt+' overall'];
   if(rk)bits.push('No. '+rk+' in the AP poll'); else if(S.cb.rank)bits.push('not ranked in the AP poll');
-  if(pos)bits.push(ord(pos)+' in the Big 12'+(cf[pos-1].cf==='0-0'?' (league play starts later)':''));
+  if(pos)bits.push(cf[pos-1].cf==='0-0'?'Big 12 play not started yet':ord(pos)+' in the Big 12 at '+cf[pos-1].cf);   /* no place shown before league play: every team is 0-0 */
   bits.push('streak '+cbStreak(gs));
   if(R.gp)bits.push(fixed(R.pf/R.gp)+' scored, '+fixed(R.pa/R.gp)+' allowed a game');
   return '<div class="cbsum"><img src="https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png" alt=""><div><b>Texas Tech Red Raiders</b><span>'+esc(bits.join(' · '))+'</span></div></div>';
