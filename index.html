@@ -235,7 +235,7 @@ body.v-college .wrap>section:not(#secCollege),body.v-college #odds{display:none!
 .bar .seg.lg{flex-shrink:0; padding:2px}
 .bar .seg.lg button{font-size:12px; padding:5px 11px}
 .bar .seg.lg button.on{background:#cc0000}
-.bar .seg.lg button[data-lg=nba].on{background:var(--blue)}
+.bar .seg.lg button[data-league=nba].on{background:var(--blue)}
 @media (max-width:640px){ .bar .seg.lg button{padding:5px 9px; font-size:11.5px} }
 .seg{display:inline-flex; gap:2px; background:var(--card); border:1px solid var(--line); border-radius:7px; padding:3px}
 .seg button{font:inherit; font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--mute);
@@ -270,7 +270,7 @@ body.v-college .wrap>section:not(#secCollege),body.v-college #odds{display:none!
 body.v-live .flt{display:inline-block}
 @media (max-width:640px){ .sch-head .note{margin-left:0; width:100%} .seg button{padding:4px 8px; font-size:11px} }
 /* v21: college basketball folded into the Schedule, under the NBA for each day (as Command Center folds in college football) */
-#daySeg{flex-wrap:wrap}
+#daySeg,#cbbDaySeg{flex-wrap:wrap}
 .lgh{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:22px 0 12px; padding-top:12px; border-top:1px solid var(--line)}
 .lgh h2{font-family:var(--display); font-size:24px; letter-spacing:.04em; text-transform:uppercase; margin:0}
 .lgh span{font-size:11.5px; color:var(--dim)}
@@ -1108,7 +1108,7 @@ table.rs .pl.lgo img{border-radius:0; background:none; object-fit:contain; width
     <a href="#live" data-v="live"><span class="nl">Scoreboard</span><span class="ns">Scores</span></a>
     <a href="#stand" data-v="stand">Standings</a>
   </nav>
-  <div class="seg lg" id="lgSeg" role="group" aria-label="League"><button type="button" data-lg="nba" class="on">NBA</button><button type="button" data-lg="cbb">College</button></div>   <!-- v23 -->
+  <div class="seg lg" id="lgSeg" role="group" aria-label="League"><button type="button" data-league="nba" class="on">NBA</button><button type="button" data-league="cbb">College</button></div>   <!-- v23 -->
   <select class="flt" id="flt" aria-label="Show">
     <option value="all">All of the NBA</option>
     <optgroup label="Focus"><option value="dal">Matters to Mavs</option><option value="race">Playoff race</option></optgroup>
@@ -1932,7 +1932,7 @@ setInterval(function(){ if(S.view==='college'&&!document.hidden&&cbbStale(S.cday
 function setView(v){
   S.view=v; document.body.className='v-'+v;
   [].forEach.call(document.querySelectorAll('#nav a'),function(a){ a.className=a.dataset.v===v?'on':'';   /* v18: no tab lit inside the game center */ });
-  [].forEach.call(document.querySelectorAll('#lgSeg button'),function(b){ b.className=(b.dataset.lg==='cbb')===(v==='college')?'on':''; });   /* v23 */
+  [].forEach.call(document.querySelectorAll('#lgSeg button'),function(b){ b.className=(b.dataset.league==='cbb')===(v==='college')?'on':''; });   /* v23 */
 }
 function route(){
   var h=location.hash||('#'+snDefault()), m=h.match(/^#game-(\d+)/);
@@ -2813,7 +2813,7 @@ function boot(){
   document.addEventListener('click',function(e){
     var t=e.target;
     if(snClick(e))return;
-    var b=t.closest('[data-lg],[data-lgo]'); if(b){ var lg=b.dataset.lg||b.dataset.lgo; if(lg==='cbb'){ if(S.view!=='college')location.hash='#college'; } else if(S.view==='college')location.hash=S.nbaFrom&&S.nbaFrom!=='#college'?S.nbaFrom:'#home'; return; }   /* v23: NBA | College switch */
+    var b=t.closest('[data-league],[data-lgo]'); if(b){ var lg=b.dataset.league||b.dataset.lgo; if(lg==='cbb'){ if(S.view!=='college')location.hash='#college'; } else if(S.view==='college')location.hash=S.nbaFrom&&S.nbaFrom!=='#college'?S.nbaFrom:'#home'; return; }   /* v23: NBA | College switch */
     b=t.closest('[data-cday]'); if(b){ S.cdayOff=+b.dataset.cday; renderCollege(); return; }   /* v23 */
     b=t.closest('[data-day]'); if(b){ S.dayOff=+b.dataset.day; renderSched(); return; }
     b=t.closest("[data-cbball]"); if(b){ if(S.view==='college'){ S.cbbAllP[S.cdayOff]=b.dataset.cbball==="1"; renderCollege(); } else { S.cbbAll[S.dayOff]=b.dataset.cbball==="1"; renderSched(); } return; }   /* v21 */
