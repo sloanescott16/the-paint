@@ -2066,7 +2066,7 @@ function cbConfTable(rows,title,sub,full){
 }
 function cbGameLine(g,b12){   // one row of Texas Tech's schedule
   var res=g.state==='post'&&g.us!=null?'<b class="'+(g.win?'w':'l')+'">'+(g.win?'W':'L')+'</b> '+g.us+'-'+g.them:g.state==='in'?'<b class="lv">Live</b> '+(g.us==null?'':g.us+'-'+g.them):esc(g.tbd?'TBD':fmtTime(g.date))+(g.tv?' &middot; '+esc(g.tv):'');
-  var tag=b12&&b12[g.opp.id]?'<span class="cbtag">Big 12</span>':g.seasonType===3?'<span class="cbtag">NCAA</span>':'';
+  var tag=(g.neutral?'<span class="cbtag">Neutral</span>':'')+(b12&&b12[g.opp.id]?'<span class="cbtag">Big 12</span>':g.seasonType===3?'<span class="cbtag">NCAA</span>':'');   /* check round 1: neutral games marked, as Splits counts them */
   return '<a class="cbg'+(g.state==='in'?' live':'')+'" href="'+esc(g.link)+'" target="_blank" rel="noopener" title="Open on ESPN"><span class="d">'+esc(fmtDay(g.date))+'</span><span class="va">'+(g.neutral?'vs':g.home?'vs':'at')+'</span>'+
     cbImg(g.opp.logo)+'<span class="o">'+(g.opp.rk?'<span class="rk">'+g.opp.rk+'</span>':'')+esc(g.opp.nm)+tag+'</span><span class="r">'+res+'</span></a>';
 }
@@ -2079,8 +2079,8 @@ function cbHero(){   // Texas Tech's game now, next or last
     up?esc(fmtDay(g.date)+', '+(g.tbd?'time TBD':fmtTime(g.date)))+(g.tv?' &middot; '+esc(g.tv):''):'<b class="'+(g.win?'w':'l')+'">'+(g.win?'Won':'Lost')+'</b> '+g.us+'-'+g.them;
   var where=(g.venue?g.venue:'')+(g.city?(g.venue?', ':'')+g.city:'');
   var body='<a class="nx cbnx" href="'+esc(g.link)+'" target="_blank" rel="noopener">'+cbImg(g.opp.logo)+'<div style="min-width:0"><div class="t"><small>'+(g.neutral?'vs':g.home?'vs':'at')+'</small>'+(g.opp.rk?'<span class="rk">'+g.opp.rk+'</span>':'')+esc(g.opp.nm)+'</div>'+
-    '<div class="s">'+line+'</div>'+(where?'<div class="s">'+esc(where)+(g.note?' &middot; '+esc(g.note):'')+'</div>':'')+'</div></a>';
-  if(up&&last&&!live)body+='<div class="sn-note">Last time out: '+(last.win?'won':'lost')+' '+last.us+'-'+last.them+' '+(last.home||last.neutral?'vs ':'at ')+esc(last.opp.nm)+', '+esc(fmtDay(last.date))+'.</div>';
+    '<div class="s">'+line+'</div>'+(where||g.neutral?'<div class="s">'+(g.neutral?'Neutral site'+(where?': ':''):'')+esc(where)+(g.note?' &middot; '+esc(g.note):'')+'</div>':'')+'</div></a>';
+  if(up&&last&&!live)body+='<div class="sn-note">Last time out: '+(last.win?'won':'lost')+' '+last.us+'-'+last.them+' '+(last.home||last.neutral?'vs ':'at ')+esc(last.opp.nm)+(last.neutral?' (neutral)':'')+', '+esc(fmtDay(last.date))+'.</div>';
   return snCard(lab,body,'','Texas Tech '+R.txt);
 }
 function cbSummary(){
@@ -2106,7 +2106,7 @@ function cbHome(){
   var poll=cbPollTable(10)+(S.cb.rank?'<a class="cbbmore" href="#college-race">The full Top 25 and the coaches poll</a>':'');
   var nw=S.cb.news?(S.cb.news.articles||[]).slice(0,5).map(function(a){ var l=(a.links&&a.links.web&&a.links.web.href)||''; return '<a class="cbnews" href="'+esc(l)+'" target="_blank" rel="noopener"><b>'+esc(a.headline||'')+'</b><span>'+esc(a.published?fmtDay(a.published):'')+'</span></a>'; }).join('')||'<div class="empty">No Texas Tech stories just now.</div>':cbState('news',false,'Texas Tech stories');
   $('cbHome').innerHTML=cbSummary()+'<div class="cg">'+'<div class="sn-col">'+cbHero()+snCard('Today','<div class="cbin">'+today+'</div>','','Texas Tech, Top 25, Big 12')+'</div>'+
-    '<div class="sn-col">'+snCard('AP Top 10','<div class="cbin">'+poll+'</div>')+'<div>'+b12+'</div>'+snCard('Texas Tech news','<div class="cbin">'+nw+'</div>','','from ESPN')+'</div></div>';
+    '<div class="sn-col">'+snCard('AP Top 10','<div class="cbin">'+poll+'</div>','',esc(cbPollName(cbPoll('ap'),'ap')))+'<div>'+b12+'</div>'+snCard('Texas Tech news','<div class="cbin">'+nw+'</div>','','from ESPN')+'</div></div>';
 }
 /* ---------- College Season: Texas Tech ---------- */
 function cbFlat(cats){ var m={}; (cats||[]).forEach(function(c){ (c.stats||[]).forEach(function(s){ m[s.name]=s; }); }); return m; }
@@ -2157,11 +2157,19 @@ function cbSeason(){
 }
 /* ---------- College Top 25 (the Race slot) ---------- */
 function cbPoll(t){ return S.cb.rank&&(S.cb.rank.rankings||[]).filter(function(r){ return r.type===t; })[0]; }
+/* check round 1: the poll feed only carries each team's record on poll day (0-0 in the preseason poll), so the current
+   record is read from the conference standings of the leagues the ranked teams play in; a team not found shows a dash */
+var CB_POLL_CONFS=['8','23','7','2','4','29'];   // Big 12, SEC, Big Ten, ACC, Big East, WCC
+function cbCurRec(){ var m={}; CB_POLL_CONFS.forEach(function(g){ cbLoadStand(g); if(S.cb.stand[g])cbConfRows(S.cb.stand[g]).forEach(function(r){ m[r.id]=r.ov; }); }); return m; }
+function cbPollName(p,t){
+  var wk=S.cb.rank&&S.cb.rank.latestWeek&&S.cb.rank.latestWeek.displayValue||'';
+  return (t==='usa'?'Coaches poll':'AP poll')+(wk?', '+wk.toLowerCase():'')+(p&&p.date?', '+new Date(p.date).toLocaleDateString([], {month:'short',day:'numeric'}):'');
+}
 function cbPollTable(n,t){
   var p=cbPoll(t||'ap'); if(!p)return cbState('rank',false,'The polls');
-  var b12=cbBig12Ids(), rows=(p.ranks||[]).slice(0,n||25);
-  return '<div class="scrollx"><table class="st"><thead><tr><th>Team</th><th>Record</th><th>Points</th><th>Last</th></tr></thead><tbody>'+rows.map(function(r){ var tm=r.team||{}, id=String(tm.id||''), mv=r.previous&&r.previous!==r.current?(r.previous>r.current?'<span class="up">+'+(r.previous-r.current)+'</span>':'<span class="dn">-'+(r.current-r.previous)+'</span>'):'';
-    return '<tr class="'+(id===CBB_FAV?'fav':'')+'"><td><div class="tm"><span class="sdb">'+r.current+'</span>'+cbImg(cbLogo(tm))+esc(tm.location||tm.nickname||tm.name||'')+(b12[id]?' <i>Big 12</i>':'')+'</div></td><td>'+esc(r.recordSummary||'-')+'</td><td>'+esc(r.points!=null?r.points:'-')+(r.firstPlaceVotes?' <i>('+r.firstPlaceVotes+')</i>':'')+'</td><td>'+(r.previous?r.previous+' '+mv:'-')+'</td></tr>'; }).join('')+'</tbody></table></div>';
+  var b12=cbBig12Ids(), rows=(p.ranks||[]).slice(0,n||25), cur=cbCurRec(), any=rows.some(function(r){ return cur[String((r.team||{}).id)]; });
+  return '<div class="scrollx"><table class="st"><thead><tr><th>Team</th>'+(any?'<th>Record</th>':'')+'<th>Points</th><th>Last</th></tr></thead><tbody>'+rows.map(function(r){ var tm=r.team||{}, id=String(tm.id||''), mv=r.previous&&r.previous!==r.current?(r.previous>r.current?'<span class="up">+'+(r.previous-r.current)+'</span>':'<span class="dn">-'+(r.current-r.previous)+'</span>'):'';
+    return '<tr class="'+(id===CBB_FAV?'fav':'')+'"><td><div class="tm"><span class="sdb">'+r.current+'</span>'+cbImg(cbLogo(tm))+esc(tm.location||tm.nickname||tm.name||'')+(b12[id]?' <i>Big 12</i>':'')+'</div></td>'+(any?'<td>'+esc(cur[id]||'-')+'</td>':'')+'<td>'+esc(r.points!=null?r.points:'-')+(r.firstPlaceVotes?' <i>('+r.firstPlaceVotes+')</i>':'')+'</td><td>'+(r.previous?r.previous+' '+mv:'-')+'</td></tr>'; }).join('')+'</tbody></table></div>'+(any?'<div class="sn-note">Records are as of today, from the conference standings.</div>':'');
 }
 function cbRace(){
   cbLoadRank(); cbLoadStand('8'); cbLoadTeam();
@@ -2175,10 +2183,10 @@ function cbRace(){
     '<div class="sn-note">'+inPoll.length+' of 16 Big 12 teams are in the '+(t==='ap'?'AP':'coaches')+' Top 25.</div></div>':cbState('st8',false,'The Big 12 teams');
   var tt=S.cb.tt, ahead=tt?tt.games.filter(function(g){ return g.state!=='post'&&g.opp.rk; }):[];
   var rx=tt?'<div class="cbsched">'+(ahead.length?ahead.map(function(g){ return cbGameLine(g,b12); }).join(''):'<div class="empty">No ranked teams left on the schedule.</div>')+'</div><div class="sn-note">Ranks are the current AP rank as ESPN lists it on the schedule.</div>':cbState('tt',false,'The Texas Tech schedule');
-  var march='<div class="cbin cbtxt"><p>College basketball has no standings race like the NBA&rsquo;s, so there is no odds table or what if here. Sixty-eight teams make the NCAA tournament in March: every conference tournament champion gets in, and a committee picks and seeds the rest.</p>'+
+  var march='<div class="cbin cbtxt"><p>College basketball has no standings race like the NBA&rsquo;s, so there is no odds table or what if here. The NCAA tournament field is picked on Selection Sunday in March: every conference tournament champion gets in, and a committee picks and seeds the rest.</p>'+
     '<p>The committee&rsquo;s main sorting tool is the NET ranking. NCAA.com publishes it, but it has no public feed this page can read, so it is not shown. There is no free bracketology feed either, so no projected seed is shown.</p>'+
     '<p><a href="https://www.ncaa.com/rankings/basketball-men/d1/ncaa-mens-basketball-net-rankings" target="_blank" rel="noopener">NET on NCAA.com</a> &middot; <a href="https://www.espn.com/mens-college-basketball/bracketology" target="_blank" rel="noopener">ESPN bracketology</a></p></div>';
-  $('cbRace').innerHTML=cbSummary()+'<div class="cg"><div class="sn-col">'+snCard(t==='ap'?'AP Top 25':'Coaches Poll',cbPollTable(25,t)+oth+drop,seg,esc(sub))+'</div>'+
+  $('cbRace').innerHTML=cbSummary()+'<div class="cg"><div class="sn-col">'+snCard(t==='ap'?'AP Top 25':'Coaches Poll',cbPollTable(25,t)+oth+drop,seg,esc(p?cbPollName(p,t):sub))+'</div>'+
     '<div class="sn-col">'+snCard('Big 12 in the poll',bx)+snCard('Ranked teams ahead for Texas Tech',rx)+snCard('The road to March',march)+'</div></div>';
 }
 /* ---------- College Scores ---------- */
